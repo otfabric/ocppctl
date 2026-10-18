@@ -1,0 +1,45 @@
+# A charging session in OCPP 2.0.1: boot, authorize, TransactionEvent Started/Updated/Ended.
+#   ocppctl client script examples/scenarios/smoke-2.0.1.yaml --url ws://localhost:9000/CS001 --insecure-transport --var token=04A1B2C3D4E5F6
+name: smoke-2.0.1
+version: "2.0.1"
+steps:
+  - name: boot
+    call: BootNotification
+    payload: {reason: PowerUp, chargingStation: {vendorName: OTFabric, model: Simulator}}
+    expect:
+      status: Accepted
+  - call: StatusNotification
+    payload: {timestamp: "${now}", connectorStatus: Available, evseId: 1, connectorId: 1}
+  - call: Authorize
+    payload: {idToken: {idToken: "${token}", type: ISO14443}}
+    expect:
+      idTokenInfo.status: Accepted
+  - name: started
+    call: TransactionEvent
+    payload:
+      eventType: Started
+      timestamp: "${now}"
+      triggerReason: Authorized
+      seqNo: 0
+      transactionInfo: {transactionId: "${identity}-tx1", chargingState: Charging}
+      evse: {id: 1, connectorId: 1}
+      idToken: {idToken: "${token}", type: ISO14443}
+  - name: updated
+    call: TransactionEvent
+    payload:
+      eventType: Updated
+      timestamp: "${now}"
+      triggerReason: MeterValuePeriodic
+      seqNo: 1
+      transactionInfo: {transactionId: "${identity}-tx1"}
+      meterValue:
+        - timestamp: "${now}"
+          sampledValue: [{value: 1500, measurand: Energy.Active.Import.Register, unitOfMeasure: {unit: Wh}}]
+  - name: ended
+    call: TransactionEvent
+    payload:
+      eventType: Ended
+      timestamp: "${now}"
+      triggerReason: StopAuthorized
+      seqNo: 2
+      transactionInfo: {transactionId: "${identity}-tx1", stoppedReason: Local}

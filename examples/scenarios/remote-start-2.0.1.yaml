@@ -1,0 +1,30 @@
+# The CSMS starts a session remotely: run this, then have the CSMS send
+# RequestStartTransaction to the station within a minute.
+#   ocppctl client script examples/scenarios/remote-start-2.0.1.yaml --url wss://csms.test/ocpp/CS001
+name: remote-start-2.0.1
+version: "2.0.1"
+steps:
+  - call: BootNotification
+    payload: {reason: PowerUp, chargingStation: {vendorName: OTFabric, model: Simulator}}
+    expect: {status: Accepted}
+  - name: remote start
+    wait_for: RequestStartTransaction
+    timeout: 60s
+    expect:
+      idToken.idToken: {present: true}
+      remoteStartId: {present: true}
+    answer: {status: Accepted}
+    save:
+      token: idToken.idToken
+      remote: remoteStartId
+  - call: TransactionEvent
+    payload:
+      eventType: Started
+      timestamp: "${now}"
+      triggerReason: RemoteStart
+      seqNo: 0
+      transactionInfo: {transactionId: "${uuid}", chargingState: Charging, remoteStartId: "${remote}"}
+      evse: {id: 1, connectorId: 1}
+      idToken: {idToken: "${token}", type: ISO14443}
+  - name: the CSMS stays quiet
+    expect_no_call: 2s
