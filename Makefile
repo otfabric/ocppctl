@@ -1,4 +1,4 @@
-.PHONY: help all run test coverage cover compile lint lint-ci fmt fmt-check vet build build-nocheck build-all release-all install clean
+.PHONY: help all run test stress coverage cover compile lint lint-ci fmt fmt-check vet build build-nocheck build-all release-all install clean
 
 help: ## This help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -44,6 +44,12 @@ check: fmt fmt-check lint lint-ci vet test coverage ## Run all checks (format, l
 test: ## Run unit tests with race detector
 	@echo "Running unit tests (race detector)"
 	@go test -count=1 -race ./...
+
+STRESS_COUNT ?= 20
+
+stress: ## Run every test STRESS_COUNT times with the race detector at 1, 2 and 8 CPUs, to shake out flaky tests
+	@echo "Running tests $(STRESS_COUNT)x at -cpu 1,2,8 (race detector)"
+	@go test -race -count=$(STRESS_COUNT) -cpu 1,2,8 -timeout 60m ./...
 
 coverage: ## Run tests with whole-module coverage (writes coverage.out); fails below COVERAGE_MIN percent
 	@echo "Running tests with coverage"

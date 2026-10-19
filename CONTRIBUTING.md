@@ -36,6 +36,10 @@ make test
 # Run tests with whole-module coverage (fails below 85%)
 make coverage
 
+# Run every test 20 times at 1, 2 and 8 CPUs with the race detector (before a release,
+# and after touching anything concurrent); STRESS_COUNT=50 for more
+make stress
+
 # Build for the current platform (./bin/ocppctl); runs `make check` first
 make build
 
@@ -90,6 +94,7 @@ Examples:
 - Do not assume timing a peer does not promise: wait for an event with a deadline instead of sleeping
 - Keep tests fast and race-clean; CI runs them with `-race`
 - Whole-module statement coverage must stay at or above 85% (`make coverage`)
+- Tests must not depend on timing: wait for what the code under test reports (an event, a line on stdout or stderr, a message the peer received) with a generous deadline, never for a fixed sleep. A CSMS in a test sends one CALL at a time, as OCPP-J requires. `make stress` must pass
 - If your change affects what goes on the wire or how ocppctl answers, run `scripts/interop.sh` and say in the pull request what you tested against
 
 ### Documentation

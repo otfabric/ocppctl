@@ -400,7 +400,7 @@ func TestAnswers2x(t *testing.T) {
 			}
 			boots := waitCount(t, rec, "BootNotification", 3)
 			if !strings.Contains(string(boots[2]), "RemoteReset") {
-				t.Fatalf("second boot: %s", boots[1])
+				t.Fatalf("third boot: %s", boots[2])
 			}
 		})
 	}
@@ -434,6 +434,9 @@ func TestReconnect(t *testing.T) {
 	done := make(chan error, 1)
 	go func() { done <- s.Run(ctx) }()
 	ev.wait(t, "booted", event("booted"))
+	// "booted" comes before the StatusNotifications of the boot: let them arrive first, so
+	// that the two after the reconnection are the third and fourth.
+	waitCount(t, csms.Recorder(ocpp.V16), "StatusNotification", 2)
 	_ = ocpptest.Session(t, csms.Server, "CSR").Close()
 	ev.wait(t, "reconnecting", event("reconnecting"))
 	ev.wait(t, "reconnected", func(e types.StationEvent) bool { return e.Event == "connected" && e.Message == "reconnected" })
