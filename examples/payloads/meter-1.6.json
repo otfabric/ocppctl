@@ -1,0 +1,12 @@
+{
+  "connectorId": 1,
+  "transactionId": "${tx}",
+  "meterValue": [
+    {
+      "timestamp": "${now}",
+      "sampledValue": [
+        {"value": "1500", "measurand": "Energy.Active.Import.Register", "unit": "Wh"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+name: CI
+run-name: "CI (${{ github.event_name }}) on ${{ github.ref_name }} by @${{ github.actor }}"
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  ci:
+    uses: otfabric/.github/.github/workflows/go-ci.yml@v2
+    with:
+      codecov-name: ocppctl
+      go-versions: '["1.26", "1.27"]'
+      # Test the cmd packages as well (the shared default skips /cmd) and attribute
+      # coverage across the whole module, matching `make coverage`.
+      test-exclude-regex: "/example(s)?($|/)"
+      coverpkg: ./...
+    secrets: inherit
