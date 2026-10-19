@@ -11,29 +11,51 @@ entry is resolved, it moves to the release notes of the release that resolves it
 
 ## Bugs in go-ocpp
 
-ocppctl is built on [go-ocpp](https://github.com/otfabric/go-ocpp) v0.1.1. These are
-defects of that library, found while building and testing ocppctl. The fixes belong in
-go-ocpp; ocppctl moves to the release that has them.
+ocppctl is built on [go-ocpp](https://github.com/otfabric/go-ocpp). These are defects of
+that library, found while building and testing ocppctl. All three are fixed (G1 and G2
+in go-ocpp v0.1.2, G3 in v0.1.3); ocppctl v0.1.0 requires go-ocpp v0.1.3 and has no
+workaround of its own any more.
 
 | # | Bug | Effect on ocppctl | Status |
 |---|-----|-------------------|--------|
-| G1 | **`Client.Shutdown` and `Close` can drop a frame that is queued but not yet written.** `Endpoint.Idle()` reports idle once the writer has taken a frame off its queue, before the write completes, and does not count queued responses at all; `Close` then cancels the write. A SEND queued just before `Shutdown`, or the CALLRESULT of a handler (for example to a Reset) when the owner closes right after, can be lost. | None visible: ocppctl works around it. `client send`, the simulated station (Reset) and `client script` (answers to `wait_for`, `send` steps) count the frames go-ocpp's frame observer reports as written, and wait for them (at most 2 s) before closing. | Workaround in v0.1.0. Fix to go-ocpp proposed; remove the workaround once it is released. |
-| G2 | **Integral floats are refused for integer fields.** go-ocpp decodes payloads into Go types, and a number such as `20000.0` does not decode into an `int`: the CALL is answered with TypeConstraintViolation. The OCA schemas are JSON Schema draft-06, in which `20000.0` *is* an integer. | A peer that writes integers as floats is refused. In the interop run, EVerest libocpp 2.0.1 sends NotifyEVChargingNeeds with `"energyAmount": 20000.0` and ocppctl's CSMS refuses it. | No workaround: the validation is go-ocpp's. Fix to go-ocpp proposed. |
+| G1 | **`Client.Shutdown` and `Close` could drop a frame that was queued but not yet written.** The endpoint counted itself idle once its writer had taken a frame off the queue, before the write completed, and did not count queued answers; `Close` then cancelled the write. A SEND queued just before `Shutdown`, or the answer of a handler (to a Reset, for one) when the owner closed right after, could be lost. | `client send` could lose its SEND; the simulated station could lose its answer to a Reset; `client script` could lose the answer to a `wait_for` or a `send` step at the end. | **Fixed in go-ocpp v0.1.2**: the engine counts every frame until it is written, and `Shutdown` drains (new CALLs and SENDs refused, what is in flight finished). ocppctl closes every connection with go-ocpp's graceful `Shutdown`; its workaround (counting written frames through the frame observer) is removed. |
+| G2 | **Integral numbers were refused for integer fields.** go-ocpp decoded `20000.0` into a Go `int` and failed: TypeConstraintViolation. The OCPP 1.6 Security, 2.0.1 and 2.1 schemas are JSON Schema draft-06, in which `20000.0` is an integer. | A peer that writes integers as floats was refused: EVerest libocpp 2.0.1 sends NotifyEVChargingNeeds with `"energyAmount": 20000.0`, and ocppctl's CSMS refused it. | **Fixed in go-ocpp v0.1.2**: the integer rule follows each schema's draft (draft-06 accepts `20000.0`; the draft-04 1.6 core schemas still refuse it, as draft-04 requires). EVerest's NotifyEVChargingNeeds now passes against ocppctl's CSMS. |
+| G3 | **A SEND received just before the peer closed could be dropped.** When the close frame was read before the dispatcher had taken the SEND off its queue, the dispatcher chose at random between the SEND and the end of the connection. Found by the release run of go-ocpp v0.1.2. | A station that sends an OCPP 2.1 SEND and disconnects at once could have the SEND dropped by ocppctl's CSMS (and the other way round for `client run`). | **Fixed in go-ocpp v0.1.3**: SENDs received before the end are always delivered; CALLs that have not started are not dispatched once the connection has ended, since they can no longer be answered. |
 
 ## Findings in the reference implementations
 
 From the interoperability run against [ocpp-interop](https://github.com/otfabric/ocpp-interop)
-v0.3.1 (`scripts/interop.sh`, results in [`reports/interop-v0.3.1.tsv`](../reports/interop-v0.3.1.tsv)):
-999 exchanges passed, 11 were answered with a CALLERROR and 8 failed. Apart from G2 above
-and L3 below, every non-pass lies with the other implementation or its test adapter. ocppctl
-reports them; it does not hide or work around them.
+v0.4.1, run with go-ocpp v0.1.2 (`scripts/interop.sh`, results in
+[`reports/interop-v0.4.1.tsv`](../reports/interop-v0.4.1.tsv)): every fixture sample in both
+directions, five references. **1154 exchanges passed, 29 were answered with a CALLERROR,
+32 were skipped and 3 failed.**
 
-| # | Implementation | Finding | What ocppctl does |
-|---|----------------|---------|-------------------|
-| U1 | lorenzodonini/ocpp-go 2.0.1 station | Responds to Reset and SetNetworkProfile with `"statusInfo": null`, and to GetCompositeSchedule with an `evseId` the schema does not have. | `server call` exits 6, `invalid_response`, with the field in the error. |
-| U2 | mobilityhouse/ocpp 2.1 station | Rejects the BatterySwap fixture payload (additional properties). | None needed: the request never reaches ocppctl. |
-| U3 | mobilityhouse and EVerest test adapters, 2.1 | Cannot send the SEND NotifyPeriodicEventStream (the adapters know message types 2 to 4 only). | `client send` and `server start` support SEND; untested against these two stacks. |
-| U4 | EVerest libocpp 2.1 station | Cannot send GetCertificateChainStatus and ReportDERControl; answers NotifyWebPaymentStarted with NotImplemented. | Reported as received. |
+- The 3 failures are U1: responses of ocpp-go that do not conform to the OCA schema, which
+  ocppctl refuses (`invalid_response`), as it should.
+- The 32 skips are messages the reference did not send: ocppctl's event log shows it never
+  received them (U2, U3, U4, U5).
+- The 29 CALLERRORs are answers: 9 are ocppctl's own NotSupported for the services it does
+  not have (L3), 20 are CitrineOS's and EVerest's (U4, U5).
+
+Every non-pass lies with the other implementation or its test adapter, or with L3. ocppctl
+reports them; it does not hide or work around them. The root causes were traced in
+ocpp-interop v0.4.1 ([otfabric/ocpp-interop#7](https://github.com/otfabric/ocpp-interop/pull/7)),
+which fixed what was the adapters' (the EVerest adapter declared too few actions) and found
+nothing the adapters can honestly change for these: the pinned upstreams have no newer
+release that fixes them. The results are the same as against v0.4.0: the script sends every
+fixture sample, whatever an adapter declares.
+
+| # | Implementation | Finding | Root cause | What ocppctl does |
+|---|----------------|---------|------------|-------------------|
+| U1 | lorenzodonini/ocpp-go v0.19.0, 2.0.1 station | Responds to Reset and SetNetworkProfile with `"statusInfo": null`, and to GetCompositeSchedule with a top-level `evseId` the schema does not have. | ocpp-go's response types: `StatusInfo` without `omitempty` (`ocpp2.0.1/provisioning/reset.go` L61-64, `set_network_profile.go` L170-173); `GetCompositeScheduleResponse` writes `evseId` (`smartcharging/get_composite_schedule.go` L46-50). The `evseId` is removed on ocpp-go's master (unreleased). | `server call` exits 6, `invalid_response`, with the field in the error. |
+| U2 | mobilityhouse/ocpp 2.1.0, 2.1 station | Refuses to send the BatterySwap fixture (additional properties `SoC`, `soh`). | The fixture is right (`soC`, `soH`, as the OCA schema). The library's case conversion turns them into `SoC` and `soh` (`ocpp/charge_point.py` L57, L399), which its own validation then refuses (L414). | None needed: the message never reaches ocppctl. BatterySwap passes from the EVerest station. |
+| U3 | mobilityhouse 2.1.0 and EVerest libocpp, 2.1 stations | Cannot send the SEND NotifyPeriodicEventStream. | Neither library has OCPP-J message type 6 (`ocpp.messages.MessageType`; libocpp `common/call_types.hpp` L47-52). | Skipped. ocppctl sends and receives SENDs (tested against itself and go-ocpp). |
+| U4 | EVerest libocpp (everest-core 2026.02.1), 2.1 station | Cannot send GetCertificateChainStatus and ReportDERControl; answers NotifyWebPaymentStarted with NotImplemented. | Missing from `ocpp::v2::MessageType` (`include/ocpp/v2/types.hpp`). ReportDERControl is on everest-core's main, not in a release. | Skipped (cannot send); the CALLERROR is reported as received. |
+| U5 | CitrineOS core v2.0.1 (CSMS, 1.6, 2.0.1, 2.1) | Its message API has no route for 22 action/version pairs (for example ReserveNow, GetLog and InstallCertificate in 1.6; most 2.1 additions such as the tariff, DER and periodic-event-stream messages), and it refuses to send five fixture samples (SignedUpdateFirmware in 1.6; CancelReservation, no such reservation, and InstallCertificate, which it parses, in 2.0.1 and 2.1). It answers the 1.6 Security Whitepaper messages with NotImplemented, NotifyCustomerInformation and NotifyDisplayMessages with PropertyConstraintViolation (a `requestId` it did not send), and SignCertificate (2.0.1, 2.1) and nine other 2.1 messages with FormatViolation although the samples conform to the OCA schemas. It serves TLS only to clients that send SNI, and mixes up two connections of the same identity when the second opens before it has handled the close of the first. | CitrineOS's own behaviour (the adapter answers nothing itself: `fixtureAnswers: false`). The TLS and reconnection findings are recorded with evidence in ocpp-interop and go-ocpp. | Skipped (cannot send) or reported as answered. The interop script waits until CitrineOS has handled a close before connecting again, and the simulated station waits 2 s after a Reset before it reconnects, as a restarting charger does. |
+
+Also found, not involving ocppctl: the mobilityhouse CSMS validates the draft-06 schemas with
+a draft-04 validator and so refuses EVerest's `20000.0` (the same case as G2), recorded in
+ocpp-interop's known bugs.
 
 ## Limitations of ocppctl
 

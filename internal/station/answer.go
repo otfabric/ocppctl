@@ -37,7 +37,6 @@ var (
 // else the first schema-valid default. Every response is validated before it is sent.
 func (d *dispatcher) Dispatch(ctx context.Context, _ ocpp.Peer, action string, req json.RawMessage) (json.RawMessage, error) {
 	s := d.s
-	s.answers.Add(1) // counted on arrival: every CALL is answered with one frame
 	s.emit(types.StationEvent{Event: "call_received", Version: d.v.String(), Action: action, Request: req})
 	resp, err := d.answer(ctx, action, req)
 	if err == nil {

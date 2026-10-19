@@ -10,7 +10,6 @@ import (
 	"io"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/otfabric/go-ocpp"
@@ -57,15 +56,14 @@ type runner struct {
 	v    ocpp.Version
 	vars map[string]any
 
-	mu         sync.Mutex
-	cursor     int
-	quiet      bool     // in expect_no_call
-	noise      []string // CALLs that arrived during expect_no_call
-	inbox      chan *incoming
-	answers    atomic.Int64 // CALLs from the CSMS answered
-	written    atomic.Int64 // CALLRESULT and CALLERROR frames written
-	sends      atomic.Int64 // SENDs queued
-	sent       atomic.Int64 // SEND frames written
+	mu     sync.Mutex
+	cursor int
+	quiet  bool     // in expect_no_call
+	noise  []string // CALLs that arrived during expect_no_call
+	inbox  chan *incoming
+	// ended is closed when the scenario has run: CALLs still held for a step
+	// get the default answer, so that the connection can close gracefully.
+	ended      chan struct{}
 	pending    []*incoming
 	unexpected []types.Received
 }
@@ -95,7 +93,7 @@ func Prepare(cfg *Config) (*Scenario, *conn.Parsed, error) {
 // Run connects and runs the steps. It fails only when the first connection does: a step
 // that fails is a result.
 func Run(ctx context.Context, cfg *Config, sc *Scenario, p *conn.Parsed, stderr io.Writer) (*types.ScriptResult, error) {
-	r := &runner{cfg: cfg, sc: sc, p: p, errw: stderr, vars: map[string]any{}, inbox: make(chan *incoming, 64)}
+	r := &runner{cfg: cfg, sc: sc, p: p, errw: stderr, vars: map[string]any{}, inbox: make(chan *incoming, 64), ended: make(chan struct{})}
 	for _, kv := range cfg.Vars {
 		name, value, _ := strings.Cut(kv, "=")
 		r.vars[name] = value
@@ -104,12 +102,7 @@ func Run(ctx context.Context, cfg *Config, sc *Scenario, p *conn.Parsed, stderr 
 	if err := r.dial(ctx); err != nil {
 		return nil, err
 	}
-	defer func() {
-		if r.c != nil {
-			r.drain()
-			_ = r.c.Close()
-		}
-	}()
+	defer r.end() // on an early return; a completed run has ended already
 	_, _ = fmt.Fprintf(stderr, "connected to %s as %s (OCPP %s)\n", p.URL, p.Identity, r.v)
 	res := &types.ScriptResult{Scenario: sc.Name, Target: p.URL, Version: r.v.String(), Steps: []types.StepResult{}}
 	failed := false
@@ -143,6 +136,7 @@ func Run(ctx context.Context, cfg *Config, sc *Scenario, p *conn.Parsed, stderr 
 		res.Steps = append(res.Steps, sr)
 		_, _ = fmt.Fprintf(stderr, "%s %d %s %s\n", sr.Result, sr.Index, kind, action)
 	}
+	r.end()
 	r.mu.Lock()
 	r.cursor = len(sc.Steps)
 	res.Unexpected = append([]types.Received{}, r.unexpected...)
@@ -151,39 +145,31 @@ func Run(ctx context.Context, cfg *Config, sc *Scenario, p *conn.Parsed, stderr 
 	return res, nil
 }
 
+// end answers the CALLs still held for a step that did not run and closes
+// the connection gracefully. It may be called more than once.
+func (r *runner) end() {
+	select {
+	case <-r.ended:
+		return
+	default:
+		close(r.ended)
+	}
+	if r.c != nil {
+		_ = r.c.Stop()
+		r.c = nil
+	}
+}
+
 func (r *runner) dial(ctx context.Context) error {
 	c, err := conn.Dial(ctx, r.p, conn.Options{
 		Handler: func(v ocpp.Version) ocpp.Dispatcher { return &dispatcher{r: r, v: v, def: &answer.Default{Version: v}} },
 		Debug:   r.cfg.Debug, Stderr: r.errw,
-		Observer: func(_ ocpp.ConnInfo, dir ocpp.Direction, frame []byte) {
-			if dir != ocpp.Outgoing || len(frame) < 2 {
-				return
-			}
-			switch frame[1] {
-			case '3', '4', '5':
-				r.written.Add(1)
-			case '6':
-				r.sent.Add(1)
-			}
-		},
 	})
 	if err != nil {
 		return err
 	}
-	// Frames left unwritten on an earlier connection never will be.
-	r.written.Store(r.answers.Load())
-	r.sent.Store(r.sends.Load())
 	r.c, r.v = c, c.Version()
 	return nil
-}
-
-// drain waits, briefly, until every answer to the CSMS and every SEND is written: go-ocpp v0.1.1 can drop a
-// response that is queued when the connection closes.
-func (r *runner) drain() {
-	deadline := time.Now().Add(2 * time.Second)
-	for (r.written.Load() < r.answers.Load() || r.sent.Load() < r.sends.Load()) && time.Now().Before(deadline) {
-		time.Sleep(2 * time.Millisecond)
-	}
 }
 
 func (r *runner) timeout(st *Step) time.Duration {
@@ -215,7 +201,6 @@ func (r *runner) step(ctx context.Context, st *Step, sr *types.StepResult) error
 			if err := r.c.Send(ctx, action, req); err != nil {
 				return err
 			}
-			r.sends.Add(1)
 			return nil
 		}
 		return r.call(ctx, st, action, req, sr)
@@ -233,14 +218,12 @@ func (r *runner) step(ctx context.Context, st *Step, sr *types.StepResult) error
 		if r.c == nil {
 			return errors.New("already disconnected")
 		}
-		r.drain()
-		err := r.c.Close()
+		err := r.c.Stop()
 		r.c = nil
 		return err
 	case "reconnect":
 		if r.c != nil {
-			r.drain()
-			_ = r.c.Close()
+			_ = r.c.Stop()
 		}
 		if err := r.dial(ctx); err != nil {
 			r.c = nil
@@ -453,7 +436,6 @@ type dispatcher struct {
 
 func (d *dispatcher) Dispatch(ctx context.Context, p ocpp.Peer, action string, req json.RawMessage) (json.RawMessage, error) {
 	r := d.r
-	r.answers.Add(1) // counted on arrival: every CALL is answered with one frame
 	r.mu.Lock()
 	if r.quiet {
 		r.noise = append(r.noise, action)
@@ -472,14 +454,26 @@ func (d *dispatcher) Dispatch(ctx context.Context, p ocpp.Peer, action string, r
 		case r.inbox <- in:
 		case <-ctx.Done():
 			return nil, ctx.Err()
+		case <-r.ended:
+			return d.unexpected(ctx, p, action, req)
 		}
 		select {
 		case rep := <-in.reply:
 			return rep.resp, rep.err
 		case <-ctx.Done():
 			return nil, ctx.Err()
+		case <-r.ended:
+			// The scenario ended before the step that waits for it ran.
+			return d.unexpected(ctx, p, action, req)
 		}
 	}
+	return d.unexpected(ctx, p, action, req)
+}
+
+// unexpected answers a CALL that no step answers with the default answer and
+// lists it in the result.
+func (d *dispatcher) unexpected(ctx context.Context, p ocpp.Peer, action string, req json.RawMessage) (json.RawMessage, error) {
+	r := d.r
 	resp, err := d.def.Dispatch(ctx, p, action, req)
 	rec := types.Received{Time: types.Millis(time.Now()), Action: action, Request: req, Response: resp}
 	var ce *ocpp.CallError

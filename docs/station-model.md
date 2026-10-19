@@ -256,7 +256,7 @@ The device model, the configuration keys and the transactions live in memory: a 
 ## Connections and reconnection
 
 - **Lost connection.** The station reconnects with go-ocpp's back-off, the algorithm of OCPP 2.x Part 4 §5.4 with go-ocpp's defaults: attempt *n* waits 5 s × 2^min(n−1, 5) plus up to 10 s at random. The CALLs that were in flight fail (`call_error`) and are not sent again. Once connected again, the station stays booted (a reconnection is not a reboot: OCPP 2.x boots after a power up or a reset) and sends the StatusNotifications of its connectors again; its sessions go on. The events are `disconnected`, `reconnecting`, then `connected` with message `reconnected`. With `--no-reconnect` the station ends instead (exit 4, `connection_lost`).
-- **Reset.** The station closes the connection itself and connects again, retrying after 1 s, 2 s, 4 s, … up to one minute between attempts (`reconnecting` events), then boots with reason `RemoteReset` (`connected`, `booted`).
+- **Reset.** The station writes its answer, closes the connection gracefully, is gone for 2 s, as a charger that restarts, and connects again, retrying after 1 s, 2 s, 4 s, … up to one minute between attempts (`reconnecting` events), then boots with reason `RemoteReset` (`connected`, `booted`).
 - **Keepalive.** `--ping-interval` sends WebSocket pings; without it the station sends none.
 
 ## Many stations

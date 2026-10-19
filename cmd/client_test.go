@@ -124,6 +124,9 @@ func TestCall(t *testing.T) {
 			station(t, csms, "CS1", "call", "Heartbeat", "--ocpp-version", v.String(), "--boot").want(t, errs.ExitOK).
 				has(t, "Heartbeat answered").errHas(t, "BootNotification accepted")
 			station(t, csms, "CS1", "call", "Heartbeat", "--ocpp-version", v.String(), "--format", "table").want(t, errs.ExitOK).has(t, "currentTime")
+			// --debug traces every frame on stderr
+			station(t, csms, "CS1", "call", "Heartbeat", "--ocpp-version", v.String(), "--debug").want(t, errs.ExitOK).
+				errHas(t, `CS1 > [2,`, `"Heartbeat",{}]`, `CS1 < [3,`)
 		})
 	}
 	station(t, csms, "CS1", "call", "Heartbeat", "--payload", `{"x":1}`, "--ocpp-version", "1.6").want(t, errs.ExitInvalidInput).errHas(t, "x")

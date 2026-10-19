@@ -5,7 +5,6 @@
 package clientops
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -65,10 +64,6 @@ func (s *session) received() []types.Received {
 
 // open validates the target, connects, and sends the BootNotification of --boot.
 func open(ctx context.Context, cfg *Common, stderr io.Writer) (*session, error) {
-	return openWith(ctx, cfg, stderr, nil)
-}
-
-func openWith(ctx context.Context, cfg *Common, stderr io.Writer, observer ocpp.FrameObserver) (*session, error) {
 	p, err := cfg.Parse()
 	if err != nil {
 		return nil, err
@@ -80,7 +75,6 @@ func openWith(ctx context.Context, cfg *Common, stderr io.Writer, observer ocpp.
 	c, err := conn.Dial(ctx, p, conn.Options{
 		Handler: func(v ocpp.Version) ocpp.Dispatcher { return s.answers[v] },
 		Debug:   cfg.Debug, Stderr: stderr,
-		Observer: observer,
 	})
 	if err != nil {
 		return nil, err
@@ -107,7 +101,7 @@ func openWith(ctx context.Context, cfg *Common, stderr io.Writer, observer ocpp.
 	return s, nil
 }
 
-func (s *session) close() { _ = s.c.Close() }
+func (s *session) close() { _ = s.c.Stop() }
 
 // call sends a CALL and validates the response; resp may be nil.
 func (s *session) call(ctx context.Context, action string, req json.RawMessage, resp any) error {
@@ -216,22 +210,16 @@ func Send(ctx context.Context, cfg *SendConfig, stdin io.Reader, stderr io.Write
 	if _, err := cfg.Parse(); err != nil {
 		return nil, err
 	}
-	// go-ocpp v0.1.1's Shutdown can close the connection while a dequeued SEND is still
-	// being written; the frame observer runs once a frame is written, so wait for it.
-	written := make(chan struct{}, 1)
-	observer := func(_ ocpp.ConnInfo, dir ocpp.Direction, frame []byte) {
-		if dir == ocpp.Outgoing && bytes.HasPrefix(bytes.TrimSpace(frame), []byte("[6,")) {
-			select {
-			case written <- struct{}{}:
-			default:
-			}
-		}
-	}
-	s, err := openWith(ctx, &cfg.Common, stderr, observer)
+	s, err := open(ctx, &cfg.Common, stderr)
 	if err != nil {
 		return nil, err
 	}
-	defer s.close()
+	sent := false
+	defer func() {
+		if !sent {
+			s.close()
+		}
+	}()
 	if s.v != ocpp.V21 {
 		return nil, errs.InvalidInput(errs.CodeUnsupportedVersion,
 			fmt.Sprintf("SEND exists in OCPP 2.1 only; the CSMS chose %s (offer 2.1 with --ocpp-version 2.1)", s.v), nil)
@@ -251,16 +239,11 @@ func Send(ctx context.Context, cfg *SendConfig, stdin io.Reader, stderr io.Write
 	if err := s.c.Send(ctx, cfg.Action, req); err != nil {
 		return nil, ocpperr.Wrap(err, cfg.Action, true)
 	}
-	select {
-	case <-written:
-	case <-time.After(s.c.Parsed.Timeout):
+	// The graceful close returns once the SEND is written.
+	sent = true
+	if err := s.c.Stop(); err != nil {
 		return nil, errs.New(errs.KindTimeout, errs.CodeOutcomeUnknown,
-			fmt.Sprintf("the %s SEND was queued but not written within %s", cfg.Action, s.c.Parsed.Timeout), nil)
-	case <-ctx.Done():
-		return nil, ocpperr.Wrap(ctx.Err(), cfg.Action, true)
+			fmt.Sprintf("the %s SEND was queued but not written within %s", cfg.Action, conn.ShutdownTimeout), err)
 	}
-	sctx, cancel := context.WithTimeout(ctx, s.c.Parsed.Timeout)
-	defer cancel()
-	_ = s.c.Shutdown(sctx)
 	return &types.SendResult{Target: s.c.Parsed.URL, Version: s.v.String(), Action: cfg.Action, Request: req, Sent: true}, nil
 }

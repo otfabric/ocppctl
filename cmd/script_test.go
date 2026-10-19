@@ -310,3 +310,32 @@ steps:
 		t.Fatalf("the out-of-order step waited for its timeout: %d ms", res.DurationMS)
 	}
 }
+
+// A CALL held for a step that never runs (the scenario stopped at a failure
+// before it) is answered with the default answer when the scenario ends, and
+// listed as unexpected: the CSMS is not left waiting.
+func TestScriptEndsWithHeldCall(t *testing.T) {
+	csms := testcsms.Start(t)
+	f := scenario(t, `
+version: "2.0.1"
+steps:
+  - sleep: 3s
+  - call: Heartbeat
+    expect: {currentTime: "never"}
+  - wait_for: Reset
+`)
+	l := start(t, "client", "script", f, "--url", csms.URL+"CSH", "--insecure-transport", "--format", "json")
+	sess := ocpptest.Session(t, csms.Server, "CSH")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	var resp map[string]any
+	// sent during the sleep: held for the wait_for step, which is skipped
+	if err := sess.Call(ctx, "Reset", json.RawMessage(`{"type":"Immediate"}`), &resp); err != nil || resp["status"] != "Accepted" {
+		t.Fatalf("Reset: %v %v", resp, err)
+	}
+	var res types.ScriptResult
+	l.result(t).want(t, errs.ExitPartial).decode(t, &res)
+	if res.Steps[2].Result != "skipped" || len(res.Unexpected) != 1 || res.Unexpected[0].Action != "Reset" {
+		t.Fatalf("%+v", res)
+	}
+}

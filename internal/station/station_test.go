@@ -88,7 +88,7 @@ func parsed(t *testing.T, url string, v ocpp.Version) *conn.Parsed {
 func start(t *testing.T, m *Model, p *conn.Parsed) (*Station, *events, func() error) {
 	t.Helper()
 	ev := &events{}
-	s := New(Options{Parsed: p, Model: m, Reconnect: false, Emit: ev.emit, Stderr: &bytes.Buffer{}})
+	s := New(Options{Parsed: p, Model: m, Reconnect: false, Emit: ev.emit, Stderr: &bytes.Buffer{}, RestartDelay: 10 * time.Millisecond})
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() { done <- s.Run(ctx) }()
@@ -447,5 +447,30 @@ func TestReconnect(t *testing.T) {
 	cancel()
 	if err := <-done; err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Stopped while it restarts after a Reset, the station ends without an error.
+func TestStopDuringRestart(t *testing.T) {
+	csms := testcsms.Start(t)
+	ev := &events{}
+	s := New(Options{Parsed: parsed(t, csms.URL+"CSX", ocpp.V201), Model: Demo(), RestartDelay: time.Minute, Emit: ev.emit})
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- s.Run(ctx) }()
+	ev.wait(t, "booted", event("booted"))
+	sess := ocpptest.Session(t, csms.Server, "CSX")
+	if got := call(t, sess, "Reset", `{"type":"Immediate"}`)["status"]; got != "Accepted" {
+		t.Fatalf("Reset: %v", got)
+	}
+	ev.wait(t, "reset", event("reset"))
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("stopped while restarting: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the station did not stop while restarting")
 	}
 }
