@@ -44,7 +44,7 @@ make stress
 make build
 
 # Run against the reference implementations of ocpp-interop (Docker, jq)
-scripts/interop.sh v0.3.1
+scripts/interop.sh v0.4.1
 ```
 
 Run `make` (or `make help`) for the full list of targets.

@@ -12,7 +12,6 @@ import (
 	"io"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/otfabric/go-ocpp"
@@ -32,7 +31,10 @@ type Options struct {
 	Model     *Model
 	Reconnect bool
 	// Backoff is the reconnection back-off; zero is go-ocpp's default (OCPP 2.x §5.4).
-	Backoff      client.Reconnect
+	Backoff client.Reconnect
+	// RestartDelay is how long the station is gone after a Reset before it
+	// connects again, as a charger that restarts (default 2s).
+	RestartDelay time.Duration
 	PingInterval time.Duration
 	Debug        bool
 	Stderr       io.Writer
@@ -72,8 +74,6 @@ type Station struct {
 	resetOnIdle bool
 	stats       Stats
 
-	answers   atomic.Int64 // CALLs from the CSMS answered
-	written   atomic.Int64 // CALLRESULT and CALLERROR frames written
 	tasks     chan func(context.Context)
 	connected chan struct{}
 	lost      chan error
@@ -186,12 +186,20 @@ func (s *Station) Run(ctx context.Context) error {
 		}
 		reset, err := s.serve(ctx, c, reason)
 		s.stopTimers()
-		s.drain()
-		_ = c.Close()
+		_ = c.Stop() // writes the answer to a Reset before the restart
 		if err != nil || !reset {
 			return err
 		}
 		reason = "RemoteReset"
+		delay := s.o.RestartDelay
+		if delay == 0 {
+			delay = 2 * time.Second
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(delay):
+		}
 	}
 }
 
@@ -210,11 +218,6 @@ func (s *Station) dial(ctx context.Context, first bool) (*conn.Conn, error) {
 	opts := conn.Options{
 		Handler: func(v ocpp.Version) ocpp.Dispatcher { return &dispatcher{s: s, v: v} },
 		Debug:   s.o.Debug, Stderr: s.o.Stderr, Extra: extra,
-		Observer: func(_ ocpp.ConnInfo, dir ocpp.Direction, frame []byte) {
-			if dir == ocpp.Outgoing && len(frame) > 2 && (frame[1] == '3' || frame[1] == '4' || frame[1] == '5') {
-				s.written.Add(1)
-			}
-		},
 	}
 	delay := time.Second
 	for {
@@ -238,15 +241,6 @@ func (s *Station) dial(ctx context.Context, first bool) (*conn.Conn, error) {
 		case <-time.After(delay):
 		}
 		delay = min(2*delay, time.Minute)
-	}
-}
-
-// drain waits, briefly, until every answer to the CSMS is written: go-ocpp v0.1.1 can drop
-// a response that is queued when the connection closes (a Reset's, for one).
-func (s *Station) drain() {
-	deadline := time.Now().Add(2 * time.Second)
-	for s.written.Load() < s.answers.Load() && time.Now().Before(deadline) {
-		time.Sleep(2 * time.Millisecond)
 	}
 }
 

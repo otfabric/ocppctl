@@ -212,8 +212,6 @@ type Options struct {
 	// Debug traces every frame and the library's log to Stderr.
 	Debug  bool
 	Stderr io.Writer
-	// Observer sees every frame once it is written or read, after the trace.
-	Observer ocpp.FrameObserver
 	// Extra client options (reconnect, state handler, interceptors).
 	Extra []client.Option
 }
@@ -252,20 +250,10 @@ func New(p *Parsed, o Options) (*Conn, error) {
 			opts = append(opts, client.WithHandler(v, o.Handler(v)))
 		}
 	}
-	var observers []ocpp.FrameObserver
 	if o.Debug && o.Stderr != nil {
-		opts = append(opts, client.WithLogger(slog.New(slog.NewTextHandler(o.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))))
-		observers = append(observers, Trace(o.Stderr))
-	}
-	if o.Observer != nil {
-		observers = append(observers, o.Observer)
-	}
-	if len(observers) > 0 {
-		opts = append(opts, client.WithFrameObserver(func(info ocpp.ConnInfo, dir ocpp.Direction, frame []byte) {
-			for _, f := range observers {
-				f(info, dir, frame)
-			}
-		}))
+		opts = append(opts,
+			client.WithLogger(slog.New(slog.NewTextHandler(o.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))),
+			client.WithFrameObserver(Trace(o.Stderr)))
 	}
 	opts = append(opts, o.Extra...)
 	c, err := client.New(p.URL, opts...)
@@ -292,6 +280,19 @@ func Dial(ctx context.Context, p *Parsed, o Options) (*Conn, error) {
 	}
 	c.Handshake = c.rec.handshake()
 	return c, nil
+}
+
+// ShutdownTimeout bounds a graceful close: the answers and SENDs in flight are
+// written, then the connection is closed.
+const ShutdownTimeout = 5 * time.Second
+
+// Stop closes the connection gracefully (go-ocpp's Shutdown): what is in
+// flight is written first, at most for ShutdownTimeout. It does not depend on
+// a context the user may have cancelled already (Ctrl-C).
+func (c *Conn) Stop() error {
+	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+	defer cancel()
+	return c.Shutdown(ctx)
 }
 
 // Trace returns a frame observer that writes every frame to w, ">" for sent and "<" for
