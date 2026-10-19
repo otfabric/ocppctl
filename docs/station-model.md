@@ -40,7 +40,7 @@ Besides the connection flags every `client` command has (`--url`, `--ocpp-versio
 
 `--timeout` is the response timeout of every CALL the station sends. With `--debug` every frame and go-ocpp's log go to stderr.
 
-The model is read and checked, every problem at once, before the station connects: an invalid model exits 3. The first connection must succeed: a refused or failing one exits 4.
+The model is read and checked, every problem at once, before the station connects: an invalid model exits 3. The first connection must succeed: a refused or failing one exits 4. Ctrl-C or the end of `--duration` while the station is still connecting is a normal end (exit 0).
 
 ## The model
 

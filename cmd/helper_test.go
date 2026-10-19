@@ -128,14 +128,75 @@ func (r result) errorCode(t testing.TB) (kind, code string) {
 	return env.Error.Kind, env.Error.Code
 }
 
-// eventually polls cond for up to five seconds.
+// eventually polls cond for up to fifteen seconds: long enough for a loaded CI runner
+// with the race detector, and only ever reached when the test fails.
 func eventually(t testing.TB, what string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(15 * time.Second)
 	for !cond() {
 		if time.Now().After(deadline) {
 			t.Fatalf("timed out waiting for %s", what)
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
+}
+
+// live is an invocation of ocppctl that is still running: a test waits for what it has
+// written so far instead of sleeping.
+type live struct {
+	stdout, stderr *syncBuffer
+	done           chan result
+	cancel         context.CancelFunc
+}
+
+// start runs ocppctl with args in the background; stop (or the end of the test) cancels it.
+func start(t testing.TB, args ...string) *live {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	l := &live{stdout: &syncBuffer{}, stderr: &syncBuffer{}, done: make(chan result, 1), cancel: cancel}
+	go func() {
+		code := Run(ctx, args, strings.NewReader(""), l.stdout, l.stderr)
+		l.done <- result{l.stdout.String(), l.stderr.String(), code}
+	}()
+	t.Cleanup(func() {
+		cancel()
+		select {
+		case <-l.done:
+		case <-time.After(30 * time.Second):
+			t.Errorf("ocppctl %v did not stop", args)
+		}
+	})
+	return l
+}
+
+// waitStdout waits until stdout contains s.
+func (l *live) waitStdout(t testing.TB, s string) {
+	t.Helper()
+	eventually(t, "stdout to contain "+s, func() bool { return strings.Contains(l.stdout.String(), s) })
+}
+
+// waitStderr waits until stderr contains s.
+func (l *live) waitStderr(t testing.TB, s string) {
+	t.Helper()
+	eventually(t, "stderr to contain "+s, func() bool { return strings.Contains(l.stderr.String(), s) })
+}
+
+// result waits for the invocation to end by itself.
+func (l *live) result(t testing.TB) result {
+	t.Helper()
+	select {
+	case r := <-l.done:
+		l.done <- r // for the cleanup
+		return r
+	case <-time.After(45 * time.Second):
+		t.Fatalf("ocppctl did not end\nstdout:\n%s\nstderr:\n%s", l.stdout.String(), l.stderr.String())
+		return result{}
+	}
+}
+
+// stop cancels the invocation (Ctrl-C) and returns its result.
+func (l *live) stop(t testing.TB) result {
+	t.Helper()
+	l.cancel()
+	return l.result(t)
 }

@@ -145,7 +145,7 @@ func TestClientSide(t *testing.T) {
 	mustDial(t, r.url("CS1"), ocpp.V16)
 	r.ev.waitEvent(t, "connected", "CS1", "")
 	cfg := NewCallConfig()
-	cfg.ControlSocket, cfg.Station, cfg.Action, cfg.Timeout = r.socket, "CS1", "GetConfiguration", "300ms"
+	cfg.ControlSocket, cfg.Station, cfg.Action, cfg.Timeout = r.socket, "CS1", "GetConfiguration", "10s"
 	if _, err := Call(ctx, &cfg, nil); err == nil {
 		t.Error("the station without handler answered")
 	} else if e, _ := errs.As(err); e.Code != errs.CodeCallError {

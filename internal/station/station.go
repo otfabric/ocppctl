@@ -174,7 +174,11 @@ func (s *Station) Run(ctx context.Context) error {
 	reason := "PowerUp"
 	for first := true; ; first = false {
 		c, err := s.dial(ctx, first)
-		if err != nil || c == nil { // nil: the context ended while waiting to reconnect
+		if ctx.Err() != nil {
+			// Interrupted or --duration over while connecting: a normal end, not a failure.
+			return nil
+		}
+		if err != nil || c == nil {
 			return err
 		}
 		reset, err := s.serve(ctx, c, reason)

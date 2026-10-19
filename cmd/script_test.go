@@ -160,22 +160,19 @@ func TestScriptUnexpectedAndNoise(t *testing.T) {
 version: "1.6"
 steps:
   - call: Heartbeat
-  - expect_no_call: 1s
-  - sleep: 300ms
+  - expect_no_call: 3s
 `)
-	done := make(chan result, 1)
-	go func() { done <- station(t, csms, "CSN", "script", f, "--keep-going", "--format", "json") }()
+	l := start(t, "client", "script", f, "--url", csms.URL+"CSN", "--insecure-transport", "--keep-going", "--format", "json")
+	l.waitStderr(t, "expecting no CALL")
 	sess := ocpptest.Session(t, csms.Server, "CSN")
-	csms.Recorder(ocpp.V16).Wait(t, "Heartbeat")
-	time.Sleep(300 * time.Millisecond) // into expect_no_call
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	var resp map[string]any
 	if err := sess.Call(ctx, "ClearCache", json.RawMessage(`{}`), &resp); err != nil {
 		t.Fatal(err)
 	}
 	var res types.ScriptResult
-	(<-done).want(t, errs.ExitPartial).decode(t, &res)
+	l.result(t).want(t, errs.ExitPartial).decode(t, &res)
 	if res.Steps[1].Result != "fail" || !strings.Contains(res.Steps[1].Message, "ClearCache") || len(res.Unexpected) != 1 {
 		t.Fatalf("%+v", res)
 	}
@@ -237,37 +234,41 @@ steps:
   - wait_for: TriggerMessage
     answer: accept
 `)
-	done := make(chan result, 1)
-	go func() { done <- station(t, csms, "CSA", "script", f, "--keep-going", "--format", "json") }()
+	l := start(t, "client", "script", f, "--url", csms.URL+"CSA", "--insecure-transport", "--keep-going", "--format", "json")
 	sess := ocpptest.Session(t, csms.Server, "CSA")
+	// A CSMS sends one CALL at a time, each in the order of the steps.
 	call := func(action, req string) (map[string]any, error) {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		var resp map[string]any
 		err := sess.Call(ctx, action, json.RawMessage(req), &resp)
 		return resp, err
 	}
-	// sent out of order: the CALLs wait for their steps
-	go func() { _, _ = call("Reset", `{"type":"Immediate"}`) }()
 	if r, err := call("UnlockConnector", `{"evseId":1,"connectorId":1}`); err != nil || r["status"] != "Unlocked" {
 		t.Fatalf("UnlockConnector: %v %v", r, err)
 	}
-	if _, err := call("ClearCache", `{}`); err == nil {
-		t.Fatal("ClearCache: want NotSupported")
+	if r, err := call("Reset", `{"type":"Immediate"}`); err != nil || r["status"] != "Rejected" {
+		t.Fatalf("Reset: %v %v", r, err)
 	}
-	if _, err := call("ChangeAvailability", `{"operationalStatus":"Operative"}`); err == nil {
-		t.Fatal("ChangeAvailability: want NotImplemented")
+	if _, err := call("ClearCache", `{}`); err == nil || !strings.Contains(err.Error(), "NotSupported") {
+		t.Fatalf("ClearCache: want NotSupported, got %v", err)
 	}
-	if r, err := call("GetLocalListVersion", `{}`); err != nil || r["versionNumber"] == nil && r["status"] == nil {
-		t.Logf("GetLocalListVersion: %v %v", r, err)
+	if _, err := call("ChangeAvailability", `{"operationalStatus":"Operative"}`); err == nil || !strings.Contains(err.Error(), "NotImplemented") {
+		t.Fatalf("ChangeAvailability: want NotImplemented, got %v", err)
 	}
-	_, _ = call("UnlockConnector", `{"evseId":1,"connectorId":1}`)
+	// GetLocalListVersion has no schema-valid default answer: NotSupported, and the step passes
+	if _, err := call("GetLocalListVersion", `{}`); err == nil || !strings.Contains(err.Error(), "NotSupported") {
+		t.Fatalf("GetLocalListVersion: want NotSupported, got %v", err)
+	}
+	// an answer that is not valid for the version fails the step; the CSMS gets an error
+	if _, err := call("UnlockConnector", `{"evseId":1,"connectorId":1}`); err == nil {
+		t.Fatal("UnlockConnector with an invalid answer: want a CALLERROR")
+	}
 	if r, err := call("TriggerMessage", `{"requestedMessage":"Heartbeat"}`); err != nil || r["status"] != "Accepted" {
-		d := <-done
-		t.Fatalf("TriggerMessage: %v %v\n%s\n%s", r, err, d.stdout, d.stderr)
+		t.Fatalf("TriggerMessage: %v %v", r, err)
 	}
 	var res types.ScriptResult
-	(<-done).want(t, errs.ExitPartial).decode(t, &res)
+	l.result(t).want(t, errs.ExitPartial).decode(t, &res)
 	var got []string
 	for _, s := range res.Steps {
 		got = append(got, s.Result)
@@ -277,5 +278,35 @@ steps:
 			t.Logf("%d %s %s: %s", s.Index, s.Action, s.Result, s.Message)
 		}
 		t.Fatalf("results %v", got)
+	}
+}
+
+// TestScriptOutOfOrder: a CALL for a later step that arrives while a wait_for waits for
+// another fails that step at once (the awaited CALL cannot come before it is answered),
+// and is held for its own step.
+func TestScriptOutOfOrder(t *testing.T) {
+	csms := testcsms.Start(t)
+	f := scenario(t, `
+version: "2.0.1"
+steps:
+  - wait_for: UnlockConnector
+  - wait_for: Reset
+    answer: accept
+`)
+	l := start(t, "client", "script", f, "--url", csms.URL+"CSO", "--insecure-transport", "--keep-going", "--format", "json")
+	sess := ocpptest.Session(t, csms.Server, "CSO")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	var resp map[string]any
+	if err := sess.Call(ctx, "Reset", json.RawMessage(`{"type":"Immediate"}`), &resp); err != nil || resp["status"] != "Accepted" {
+		t.Fatalf("Reset: %v %v", resp, err)
+	}
+	var res types.ScriptResult
+	l.result(t).want(t, errs.ExitPartial).decode(t, &res)
+	if res.Steps[0].Result != "fail" || !strings.Contains(res.Steps[0].Message, "reorder the steps") || res.Steps[1].Result != "pass" {
+		t.Fatalf("%+v", res.Steps)
+	}
+	if res.DurationMS > 10000 {
+		t.Fatalf("the out-of-order step waited for its timeout: %d ms", res.DurationMS)
 	}
 }

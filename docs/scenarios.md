@@ -160,7 +160,9 @@ The file is read when the scenario is loaded, and variables in it are substitute
 
 The CSMS may send CALLs at any time. How they are handled:
 
-- **A step waits for it.** When a CALL arrives for an action that the current step or a later `wait_for` step waits for, it is held for that step: the CSMS gets no answer until the step runs, then the step's `answer`. Out-of-order CALLs are therefore not lost, but the CSMS waits for them; keep the steps between short enough for the CSMS's own response timeout. A `wait_for` takes the first CALL of its action that arrived, held or new; CALLs of other actions that arrive meanwhile stay held for their own step.
+- **A step waits for it.** When a CALL arrives for an action that the current step or a later `wait_for` step waits for, it is held for that step: the CSMS gets no answer until the step runs, then the step's `answer`. A CALL that arrives early, while `call`, `sleep` or other steps run, is therefore not lost; keep those steps short enough for the CSMS's own response timeout.
+- **Out of order.** OCPP-J lets a peer have one CALL outstanding at a time. When a `wait_for` waits for X and the CSMS sends Y, which a later step waits for (or Y is already held), X cannot arrive until Y is answered, and Y's answer belongs to its own step. The `wait_for` of X therefore fails at once, saying so ("reorder the steps"), instead of waiting for its timeout; Y stays held for its step, which can still pass with `--keep-going`.
+- **Progress.** While a `wait_for` or `expect_no_call` runs, stderr says what it waits for (`waiting up to 30s for RequestStartTransaction from the CSMS`, `expecting no CALL from the CSMS for 10s`).
 - **No step waits for it.** It is answered at once with the first answer its response schema accepts: `{}`, then `{"status":"Accepted"}`, else the CALLERROR `NotSupported`. It is listed in the result as **unexpected**, with the answer it got. Unexpected CALLs do not fail the scenario.
 - **SENDs** from the CSMS (2.1) are listed as unexpected.
 - A held CALL whose request fails the schema is answered at once with the CALLERROR of the violation and does not reach its step, which then times out.

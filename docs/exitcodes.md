@@ -93,7 +93,7 @@ Errors the command-line parser finds (an unknown flag, a missing required flag) 
 
 ## Streaming commands
 
-`client run` and `server start` write one record per event. Stopping them with Ctrl-C (SIGINT) or SIGTERM, or the end of `--duration`, ends the stream normally: exit `0` (or `7` for `client run` as above). `client run --no-reconnect` exits `4` (`connection_lost`) when the connection of its only station is lost. `server start` exits `4` when it cannot listen or create its control socket.
+`client run` and `server start` write one record per event. Stopping them with Ctrl-C (SIGINT) or SIGTERM, or the end of `--duration`, ends the stream normally, also while a station is still connecting: exit `0` (or `7` for `client run` as above). `client run --no-reconnect` exits `4` (`connection_lost`) when the connection of its only station is lost. `server start` exits `4` when it cannot listen or create its control socket.
 
 ## `validate`
 

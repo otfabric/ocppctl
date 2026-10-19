@@ -308,6 +308,7 @@ func (r *runner) save(doc json.RawMessage, save map[string]string) error {
 
 // waitFor takes the next CALL of action from the CSMS, checks it and answers it.
 func (r *runner) waitFor(ctx context.Context, st *Step, action string, sr *types.StepResult) error {
+	_, _ = fmt.Fprintf(r.errw, "waiting up to %s for %s from the CSMS\n", r.timeout(st), action)
 	in, err := r.next(ctx, action, r.timeout(st))
 	if err != nil {
 		return err
@@ -338,7 +339,15 @@ func (r *runner) next(ctx context.Context, action string, timeout time.Duration)
 			return in, nil
 		}
 	}
+	held := len(r.pending) > 0
+	var first string
+	if held {
+		first = r.pending[0].action
+	}
 	r.mu.Unlock()
+	if held {
+		return nil, outOfOrder(action, first)
+	}
 	deadline := time.After(timeout)
 	for {
 		select {
@@ -350,11 +359,22 @@ func (r *runner) next(ctx context.Context, action string, timeout time.Duration)
 			if in.action == action {
 				return in, nil
 			}
+			// Held for the later step that waits for it.
 			r.mu.Lock()
 			r.pending = append(r.pending, in)
 			r.mu.Unlock()
+			return nil, outOfOrder(action, in.action)
 		}
 	}
+}
+
+// outOfOrder is the failure of a wait_for step when the CSMS sent the CALL of a later
+// step first. OCPP-J lets a peer have one CALL outstanding at a time, so the CSMS cannot
+// send the awaited one before that CALL is answered, and that answer belongs to the later
+// step: waiting would only run into the timeout.
+func outOfOrder(want, got string) error {
+	return fmt.Errorf("the CSMS sent %s while this step waits for %s; a CSMS sends one CALL at a time, so %s cannot "+
+		"arrive before %s is answered by its own (later) step: reorder the steps", got, want, want, got)
 }
 
 // answerFor builds the answer of a wait_for step, validated for the version.
@@ -399,6 +419,7 @@ func (r *runner) expectNoCall(ctx context.Context, d time.Duration) error {
 	r.mu.Lock()
 	r.quiet, r.noise = true, nil
 	r.mu.Unlock()
+	_, _ = fmt.Fprintf(r.errw, "expecting no CALL from the CSMS for %s\n", d)
 	select {
 	case <-ctx.Done():
 	case <-time.After(d):

@@ -3,99 +3,93 @@
 package cmd
 
 import (
-	"context"
-	"net"
+	"encoding/json"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/otfabric/ocppctl/internal/errs"
 	"github.com/otfabric/ocppctl/internal/testcsms"
 )
 
-func freePort(t *testing.T) string {
+// listening returns the address of the "listening" event of a server started with
+// --format json.
+func listening(t *testing.T, l *live) string {
 	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
+	l.waitStdout(t, `"event":"listening"`)
+	for _, line := range strings.Split(l.stdout.String(), "\n") {
+		var ev struct{ Event, Address string }
+		if json.Unmarshal([]byte(line), &ev) == nil && ev.Event == "listening" {
+			return ev.Address
+		}
 	}
-	defer func() { _ = l.Close() }()
-	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port)
+	t.Fatal("no listening event")
+	return ""
 }
 
 // TestEndToEnd runs ocppctl's station against ocppctl's CSMS, in every version.
 func TestEndToEnd(t *testing.T) {
-	port := freePort(t)
-	sock, err := os.MkdirTemp("", "oc")
+	dir, err := os.MkdirTemp("", "oc") // short: Unix socket paths are limited to ~104 bytes
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = os.RemoveAll(sock) })
-	sock = filepath.Join(sock, "s.sock")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	srvDone := make(chan result, 1)
-	go func() {
-		srvDone <- runCtx(t, ctx, "server", "start", "--listen", "127.0.0.1:"+port, "--no-auth", "--insecure-transport",
-			"--control-socket", sock, "--format", "json")
-	}()
-	url := "ws://127.0.0.1:" + port + "/"
-	eventually(t, "the server", func() bool {
-		return run(t, "client", "probe", "--url", url+"P", "--insecure-transport").code == errs.ExitOK
-	})
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	sock := filepath.Join(dir, "s.sock")
+	srv := start(t, "server", "start", "--listen", "127.0.0.1:0", "--no-auth", "--insecure-transport",
+		"--control-socket", sock, "--format", "json")
+	url := "ws://" + listening(t, srv) + "/"
 
 	run(t, "client", "script", "../examples/scenarios/smoke-1.6.yaml", "--url", url+"E16", "--insecure-transport", "--var", "token=AB").want(t, errs.ExitOK)
 	run(t, "client", "script", "../examples/scenarios/smoke-2.0.1.yaml", "--url", url+"E201", "--insecure-transport", "--var", "token=AB").want(t, errs.ExitOK)
 
-	runCtx2, stopRun := context.WithCancel(ctx)
-	runDone := make(chan result, 1)
-	go func() {
-		runDone <- runCtx(t, runCtx2, "client", "run", "--url", url+"SIM1", "--insecure-transport", "--format", "json")
-	}()
-	eventually(t, "SIM1", func() bool {
-		return strings.Contains(run(t, "server", "stations", "--control-socket", sock).stdout, "SIM1")
-	})
+	sim := start(t, "client", "run", "--url", url+"SIM1", "--insecure-transport", "--format", "json")
+	sim.waitStdout(t, `"event":"booted"`)
+	run(t, "server", "stations", "--control-socket", sock).want(t, errs.ExitOK).has(t, "SIM1")
 	run(t, "server", "call", "GetVariables", "--station", "SIM1", "--control-socket", sock,
 		"--payload", `{"getVariableData":[{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"}}]}`).
 		want(t, errs.ExitOK).has(t, `"attributeValue": "300"`)
 	run(t, "server", "call", "Reset", "--station", "SIM1", "--control-socket", sock, "--payload", `{"type":"Immediate"}`).want(t, errs.ExitUsage)
 	run(t, "server", "call", "Reset", "--station", "SIM1", "--control-socket", sock, "--payload", `{"type":"Immediate"}`, "--yes").
 		want(t, errs.ExitOK).has(t, "Accepted")
-	time.Sleep(300 * time.Millisecond)
-	stopRun()
-	r := (<-runDone).want(t, errs.ExitOK)
-	if n := strings.Count(r.stdout, `"event":"booted"`); n != 2 {
-		t.Fatalf("booted %d times, want 2 (Reset):\n%s", n, r.stdout)
-	}
-	cancel()
-	(<-srvDone).want(t, errs.ExitOK).has(t, `"event":"connected"`, `"action":"TransactionEvent"`, `"action":"StopTransaction"`)
+	eventually(t, "the second boot", func() bool { return strings.Count(sim.stdout.String(), `"event":"booted"`) == 2 })
+	sim.stop(t).want(t, errs.ExitOK).has(t, `"event":"reset"`)
+	srv.stop(t).want(t, errs.ExitOK).has(t, `"event":"connected"`, `"action":"TransactionEvent"`, `"action":"StopTransaction"`)
 }
 
 func TestClientRun(t *testing.T) {
 	csms := testcsms.Start(t)
-	r := station(t, csms, "R1", "run", "--duration", "500ms", "--format", "json").want(t, errs.ExitOK)
-	lines := r.lines(t)
+	l := start(t, "client", "run", "--url", csms.URL+"R1", "--insecure-transport", "--format", "json")
+	l.waitStdout(t, `"event":"booted"`)
+	lines := l.stop(t).want(t, errs.ExitOK).lines(t)
 	if len(lines) < 4 || lines[0]["event"] != "connected" || lines[0]["station"] != "R1" {
 		t.Fatalf("events: %v", lines)
 	}
 	if ts, _ := lines[0]["time"].(string); len(ts) != len("2026-01-01T00:00:00.000Z") {
 		t.Fatalf("time with milliseconds: %q", ts)
 	}
-	run(t, "client", "run", "--url", csms.URL+"L{01..03}", "--insecure-transport", "--duration", "500ms", "--stagger", "10ms", "--format", "table").
-		want(t, errs.ExitOK).has(t, "EVENT", "L01", "L03").errHas(t, "summary: 3 stations, 3 booted, 0 failed")
-	station(t, csms, "R2", "run", "--duration", "300ms").want(t, errs.ExitOK).has(t, "R2 booted")
+	l = start(t, "client", "run", "--url", csms.URL+"L{01..03}", "--insecure-transport", "--stagger", "10ms", "--format", "table")
+	eventually(t, "three boots", func() bool { return strings.Count(l.stdout.String(), " booted ") == 3 })
+	l.stop(t).want(t, errs.ExitOK).has(t, "EVENT", "L01", "L03").errHas(t, "summary: 3 stations, 3 booted, 0 failed")
+	l = start(t, "client", "run", "--url", csms.URL+"R2", "--insecure-transport")
+	l.waitStdout(t, "R2 booted")
+	l.stop(t).want(t, errs.ExitOK)
+	// --duration ends the run normally, even when it ends before the station is connected
+	station(t, csms, "R2", "run", "--duration", "1ms").want(t, errs.ExitOK)
+	station(t, csms, "R2", "run", "--duration", "300ms").want(t, errs.ExitOK)
 
 	m := filepath.Join(t.TempDir(), "m.yaml")
 	run(t, "client", "generate-config", "--output", m).want(t, errs.ExitOK).errHas(t, "wrote")
 	run(t, "client", "generate-config", "--output", m).want(t, errs.ExitInvalidInput).errHas(t, "--force")
 	run(t, "client", "generate-config", "--output", m, "--force").want(t, errs.ExitOK)
-	station(t, csms, "R3", "run", "--config", m, "--duration", "200ms").want(t, errs.ExitOK)
+	l = start(t, "client", "run", "--url", csms.URL+"R3", "--insecure-transport", "--config", m)
+	l.waitStdout(t, "R3 booted")
+	l.stop(t).want(t, errs.ExitOK)
 	j := filepath.Join(t.TempDir(), "m.json")
 	run(t, "client", "generate-config", "--format", "json", "--output", j).want(t, errs.ExitOK)
-	station(t, csms, "R4", "run", "--config", j, "--duration", "200ms", "--ocpp-version", "1.6").want(t, errs.ExitOK)
+	l = start(t, "client", "run", "--url", csms.URL+"R4", "--insecure-transport", "--config", j, "--ocpp-version", "1.6")
+	l.waitStdout(t, "R4 booted")
+	l.stop(t).want(t, errs.ExitOK)
 	run(t, "client", "generate-config").want(t, errs.ExitOK).has(t, "evses:")
 	run(t, "client", "generate-config", "--format", "toml").want(t, errs.ExitInvalidInput)
 

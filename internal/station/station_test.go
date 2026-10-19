@@ -115,7 +115,7 @@ func TestSessionLifecycle(t *testing.T) {
 			csms := testcsms.Start(t)
 			m := Demo()
 			m.Sessions = []Session{{After: Duration(10 * time.Millisecond), EVSE: 2, Connector: 1, IDToken: "AABBCC",
-				PowerW: 36000, MeterInterval: Duration(100 * time.Millisecond), Duration: Duration(450 * time.Millisecond)}}
+				PowerW: 36000, MeterInterval: Duration(100 * time.Millisecond), Duration: Duration(time.Second)}}
 			s, ev, stop := start(t, m, parsed(t, csms.URL+"CS1", v))
 			ev.wait(t, "connected", event("connected"))
 			ev.wait(t, "booted", event("booted"))
