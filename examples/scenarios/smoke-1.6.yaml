@@ -1,0 +1,32 @@
+# A charging session in OCPP 1.6: boot, authorize, start, meter, stop.
+#   ocppctl client script examples/scenarios/smoke-1.6.yaml --url ws://localhost:9000/CS001 --insecure-transport --var token=04A1B2C3D4E5F6
+name: smoke-1.6
+version: "1.6"
+steps:
+  - name: boot
+    call: BootNotification
+    payload: {chargePointVendor: OTFabric, chargePointModel: Simulator}
+    expect:
+      status: Accepted
+      interval: {present: true}
+  - call: StatusNotification
+    payload: {connectorId: 1, errorCode: NoError, status: Available, timestamp: "${now}"}
+  - call: Heartbeat
+    expect:
+      currentTime: {regex: "^20[0-9]{2}-"}
+  - call: Authorize
+    payload: {idTag: "${token}"}
+    expect:
+      idTagInfo.status: Accepted
+  - name: start
+    call: StartTransaction
+    payload: {connectorId: 1, idTag: "${token}", meterStart: 0, timestamp: "${now}"}
+    expect:
+      idTagInfo.status: Accepted
+    save:
+      tx: transactionId            # the CSMS assigns the id in 1.6
+  - call: MeterValues
+    payload: "@../payloads/meter-1.6.json"
+  - name: stop
+    call: StopTransaction
+    payload: {transactionId: "${tx}", meterStop: 1500, timestamp: "${now}", reason: Local}

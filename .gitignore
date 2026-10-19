@@ -1,0 +1,17 @@
+# Build output
+/release/*
+/ocppctl
+/bin/*
+
+# Editor settings
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Coverage reports
+coverage.*
+
+# Cursor settings
+.cursor/
+/.claude/
