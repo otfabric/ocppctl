@@ -1,6 +1,6 @@
 # Known issues, limitations and open questions
 
-Everything known to be wrong, missing or undecided in ocppctl v0.1.0, in one place. Each
+Everything known to be wrong, missing or undecided in ocppctl, in one place. Each
 entry says where the problem lies, what it does to you, and what is done about it. When an
 entry is resolved, it moves to the release notes of the release that resolves it.
 
@@ -13,7 +13,7 @@ entry is resolved, it moves to the release notes of the release that resolves it
 
 ocppctl is built on [go-ocpp](https://github.com/otfabric/go-ocpp). These are defects of
 that library, found while building and testing ocppctl. All three are fixed (G1 and G2
-in go-ocpp v0.1.2, G3 in v0.1.3); ocppctl v0.1.0 requires go-ocpp v0.1.3 and has no
+in go-ocpp v0.1.2, G3 in v0.1.3); ocppctl v0.1.1 requires go-ocpp v0.1.3 and has no
 workaround of its own any more.
 
 | # | Bug | Effect on ocppctl | Status |
@@ -59,7 +59,7 @@ ocpp-interop's known bugs.
 
 ## Limitations of ocppctl
 
-Deliberate gaps of v0.1.0. They are not bugs, but you may run into them.
+Deliberate gaps of ocppctl. They are not bugs, but you may run into them.
 
 | # | Limitation | Why, and what to do instead |
 |---|------------|-----------------------------|
@@ -75,7 +75,7 @@ Deliberate gaps of v0.1.0. They are not bugs, but you may run into them.
 
 ## Open questions
 
-Decisions taken for v0.1.0 that could reasonably go the other way. Feedback decides
+Decisions taken in v0.1.0 that could reasonably go the other way. Feedback decides
 whether they stay.
 
 | # | Question | v0.1.0 behaviour | Alternative |
