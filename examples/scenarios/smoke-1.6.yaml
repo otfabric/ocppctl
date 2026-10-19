@@ -5,7 +5,7 @@ version: "1.6"
 steps:
   - name: boot
     call: BootNotification
-    payload: {chargePointVendor: OTFabric, chargePointModel: Simulator}
+    payload: {chargePointVendor: OT Fabric, chargePointModel: Simulator}
     expect:
       status: Accepted
       interval: {present: true}

@@ -5,7 +5,7 @@ This document was the design proposal; it now records what was built and the dec
 taken on its open questions. The user documentation is the [README](../README.md) and the
 other files in this directory.
 
-ocppctl is the command-line tool of the OTFabric family for OCPP (Open
+ocppctl is the command-line tool of the OT Fabric family for OCPP (Open
 Charge Point Protocol) 1.6J, 2.0.1 and 2.1, built on
 [go-ocpp](https://github.com/otfabric/go-ocpp). Like iec104ctl and
 modbusctl it covers both roles: as a **Charging Station** (`client`) it
@@ -160,7 +160,7 @@ subprotocol" are reported with their meaning (go-ocpp's
 ## Sending a message
 
 ```
-ocppctl client call BootNotification --url … --payload '{"reason":"PowerUp","chargingStation":{"vendorName":"OTFabric","model":"Test"}}'
+ocppctl client call BootNotification --url … --payload '{"reason":"PowerUp","chargingStation":{"vendorName":"OT Fabric","model":"Test"}}'
 ocppctl client call MeterValues --url … --payload @meter.json
 cat request.json | ocppctl client call DataTransfer --url … --payload -
 ```
@@ -190,7 +190,7 @@ Result (`--format json`):
   "target": "wss://csms.example.com/ocpp/CS001",
   "version": "2.0.1",
   "action": "BootNotification",
-  "request": {"reason": "PowerUp", "chargingStation": {"vendorName": "OTFabric", "model": "Test"}},
+  "request": {"reason": "PowerUp", "chargingStation": {"vendorName": "OT Fabric", "model": "Test"}},
   "response": {"status": "Accepted", "currentTime": "2026-10-18T19:00:00.000Z", "interval": 300},
   "duration_ms": 38,
   "validated": true,
@@ -271,7 +271,7 @@ exit code says whether all held.
 version: "2.0.1"
 steps:
   - call: BootNotification
-    payload: {reason: PowerUp, chargingStation: {vendorName: OTFabric, model: Test}}
+    payload: {reason: PowerUp, chargingStation: {vendorName: OT Fabric, model: Test}}
     expect: {status: Accepted}
   - call: Authorize
     payload: {idToken: {idToken: 04A1B2C3D4E5F6, type: ISO14443}}

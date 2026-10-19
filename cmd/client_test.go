@@ -259,7 +259,7 @@ func TestShortcuts(t *testing.T) {
 			}
 		})
 	}
-	run(t, "client", "boot", "--ocpp-version", "2.0.1", "--payload-only").want(t, errs.ExitOK).has(t, `"vendorName": "OTFabric"`)
+	run(t, "client", "boot", "--ocpp-version", "2.0.1", "--payload-only").want(t, errs.ExitOK).has(t, `"vendorName": "OT Fabric"`)
 	run(t, "client", "boot", "--payload-only").want(t, errs.ExitInvalidInput).errHas(t, "exactly one")
 	run(t, "client", "transaction", "stop", "--transaction", "x", "--ocpp-version", "1.6", "--payload-only").want(t, errs.ExitInvalidInput)
 	run(t, "client", "status", "--status", "Bogus", "--ocpp-version", "2.0.1", "--payload-only").want(t, errs.ExitInvalidInput)

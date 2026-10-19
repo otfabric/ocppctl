@@ -5,7 +5,7 @@ name: remote-start-2.0.1
 version: "2.0.1"
 steps:
   - call: BootNotification
-    payload: {reason: PowerUp, chargingStation: {vendorName: OTFabric, model: Simulator}}
+    payload: {reason: PowerUp, chargingStation: {vendorName: OT Fabric, model: Simulator}}
     expect: {status: Accepted}
   - name: remote start
     wait_for: RequestStartTransaction

@@ -40,7 +40,7 @@ func newBootCmd() *cobra.Command {
 		Short: "Send a BootNotification",
 		Long:  "Send a BootNotification describing the station." + shortcutLong,
 		Example: `
-  ocppctl client boot --url wss://csms.example.com/ocpp/CS001 --vendor OTFabric --model Sim --serial SIM-0001
+  ocppctl client boot --url wss://csms.example.com/ocpp/CS001 --vendor "OT Fabric" --model Sim --serial SIM-0001
 
   # Is the station registered? Accepted, Pending or Rejected
   ocppctl client boot --url wss://csms.example.com/ocpp/CS001 --format json | jq -r .response.status
@@ -56,7 +56,7 @@ func newBootCmd() *cobra.Command {
 		Firmware string `flag:"firmware" desc:"Firmware version"`
 		Reason   string `flag:"reason" desc:"Boot reason (OCPP 2.x): PowerUp, ApplicationReset, FirmwareUpdate, LocalReset, RemoteReset, ScheduledReset, Triggered, Unknown, Watchdog"`
 	}
-	cfg.Common, cfg.Vendor, cfg.Model, cfg.Reason = clientops.NewCommon(), "OTFabric", "ocppctl", "PowerUp"
+	cfg.Common, cfg.Vendor, cfg.Model, cfg.Reason = clientops.NewCommon(), "OT Fabric", "ocppctl", "PowerUp"
 	wire(cmd, &cfg, enum("reason", "PowerUp", "ApplicationReset", "FirmwareUpdate", "LocalReset", "RemoteReset", "ScheduledReset", "Triggered", "Unknown", "Watchdog"))
 	_ = cmd.Flags().MarkHidden("boot-vendor")
 	_ = cmd.Flags().MarkHidden("boot-model")

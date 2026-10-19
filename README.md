@@ -8,7 +8,7 @@
 
 **ocppctl is a command-line toolkit for OCPP (Open Charge Point Protocol), the protocol between EV charging stations and their central system, in versions 1.6J, 2.0.1 and 2.1 and in both roles.** As a **Charging Station** it probes a CSMS (which version, which security profile, is the certificate right), sends any message with schema validation in both directions, runs one or thousands of simulated stations that boot, heartbeat, charge and answer the CSMS, and runs scenarios with expectations for CI. As a **CSMS** it accepts real or simulated stations, answers them from a model, streams everything they send, and sends them CALLs on request. It also validates payloads, decodes frames and computes certificate hashes offline.
 
-It is built for CSMS development and QA, station and firmware development, commissioning and troubleshooting, and hardware-free test setups. Output can be plain text, a table or JSON with stable exit codes, so it works in scripts and CI. It is written in Go on top of [go-ocpp](https://github.com/otfabric/go-ocpp) v0.1.1: every message on the wire is go-ocpp's, validated against the JSON schemas of the Open Charge Alliance.
+It is built for CSMS development and QA, station and firmware development, commissioning and troubleshooting, and hardware-free test setups. Output can be plain text, a table or JSON with stable exit codes, so it works in scripts and CI. It is written in Go on top of [go-ocpp](https://github.com/otfabric/go-ocpp) v0.1.3: every message on the wire is go-ocpp's, validated against the JSON schemas of the Open Charge Alliance.
 
 **Quick links:** [Quick start](#quick-start) · [Features](#features) · [Installation](#installation) · [OCPP in two minutes](#ocpp-in-two-minutes) · [Connecting](#connecting-to-a-csms) · [Runbook](#runbook) · [Simulated station](#simulate-a-station) · [Scenarios](#scenarios) · [CSMS](#run-a-csms) · [FAQ](#faq)
 
@@ -471,7 +471,7 @@ With `--format json` the HTTP status is in `.ocpp.http_status`. An untrusted cer
 #### Register a station and check the boot status
 
 ```console
-$ ocppctl client boot --url ws://localhost:9000/CS001 --insecure-transport --vendor OTFabric --model Sim --serial SIM-0001
+$ ocppctl client boot --url ws://localhost:9000/CS001 --insecure-transport --vendor "OT Fabric" --model Sim --serial SIM-0001
 connected to ws://localhost:9000/CS001 as CS001 (OCPP 2.1)
 BootNotification answered (OCPP 2.1, 6 ms)
 {
@@ -695,7 +695,7 @@ The shortcuts build the payload from flags for the version the CSMS picks, valid
 
 | Command | Sends | Flags (defaults) |
 |---|---|---|
-| `client boot` | BootNotification | `--vendor` (OTFabric), `--model` (ocppctl), `--serial`, `--firmware`, `--reason` (PowerUp; 2.x) |
+| `client boot` | BootNotification | `--vendor` (OT Fabric), `--model` (ocppctl), `--serial`, `--firmware`, `--reason` (PowerUp; 2.x) |
 | `client heartbeat` | Heartbeat | |
 | `client authorize` | Authorize | `--id-token` (required), `--type` (ISO14443; 2.x) |
 | `client status` | StatusNotification | `--status` (required), `--connector` (1), `--evse` (1; 2.x), `--error-code` (NoError; 1.6) |
@@ -716,7 +716,7 @@ The shortcuts build the payload from flags for the version the CSMS picks, valid
 - it reconnects with the OCPP back-off when the connection is lost, unless `--no-reconnect`.
 
 ```yaml
-station: {vendor: OTFabric, model: Simulator, serial: SIM-0001, firmware: 1.0.0}
+station: {vendor: OT Fabric, model: Simulator, serial: SIM-0001, firmware: 1.0.0}
 evses:
   - {id: 1, connectors: [1]}
   - {id: 2, connectors: [1]}
@@ -735,7 +735,7 @@ Every event is written to stdout:
 
 ```console
 20:49:35.361 CS201 connected tls=false compression=false
-20:49:35.362 CS201 call_sent BootNotification {"chargingStation":{"firmwareVersion":"1.0.0","model":"Simulator","serialNumber":"SIM-0001","vendorName":"OTFabric"},"reason":"PowerUp"}
+20:49:35.362 CS201 call_sent BootNotification {"chargingStation":{"firmwareVersion":"1.0.0","model":"Simulator","serialNumber":"SIM-0001","vendorName":"OT Fabric"},"reason":"PowerUp"}
 20:49:35.362 CS201 call_result BootNotification 0 ms {"currentTime":"2026-10-18T20:49:35.362Z","interval":300,"status":"Accepted"}
 20:49:35.362 CS201 booted heartbeat every 5m0s
 20:49:44.660 CS201 call_received RequestStartTransaction {"remoteStartId":1,"idToken":{"idToken":"TESTTOKEN","type":"ISO14443"}}
@@ -764,7 +764,7 @@ name: remote-start-2.0.1
 version: "2.0.1"
 steps:
   - call: BootNotification
-    payload: {reason: PowerUp, chargingStation: {vendorName: OTFabric, model: Simulator}}
+    payload: {reason: PowerUp, chargingStation: {vendorName: OT Fabric, model: Simulator}}
     expect: {status: Accepted}
   - name: remote start
     wait_for: RequestStartTransaction      # a CALL from the CSMS
@@ -823,7 +823,7 @@ The server answers BootNotification from the model (Accepted, Pending or Rejecte
 2026-10-18T20:49:22.809Z  refused        CS001  127.0.0.1:62542  reason="no credentials (HTTP 401)"
 2026-10-18T20:49:22.852Z  refused        CS999  127.0.0.1:62544  reason="unknown station identity (HTTP 404)"
 2026-10-18T20:49:22.886Z  connected      CS002  2.0.1  127.0.0.1:62549  tls=false compression=false
-2026-10-18T20:49:22.886Z  call_received  CS002  2.0.1  BootNotification  request={"chargingStation":{"model":"ocppctl","vendorName":"OTFabric"},"reason":"PowerUp"}
+2026-10-18T20:49:22.886Z  call_received  CS002  2.0.1  BootNotification  request={"chargingStation":{"model":"ocppctl","vendorName":"OT Fabric"},"reason":"PowerUp"}
 2026-10-18T20:49:22.886Z  answered       CS002  2.0.1  BootNotification  response={"currentTime":"2026-10-18T20:49:22.886Z","interval":300,"status":"Pending"}
 2026-10-18T20:49:22.887Z  disconnected   CS002  2.0.1  127.0.0.1:62549  reason="ocpp: connection lost: closed by peer with status 1000"
 ```
@@ -853,7 +853,7 @@ ocppctl actions --ocpp-version 2.1 --format json | jq -r '.actions[] | select(.k
 
 # Validate a request or a response
 ocppctl validate BootNotification --ocpp-version 2.0.1 \
-  --payload '{"reason":"PowerUp","chargingStation":{"vendorName":"OTFabric","model":"X"}}'
+  --payload '{"reason":"PowerUp","chargingStation":{"vendorName":"OT Fabric","model":"X"}}'
 ocppctl validate BootNotification --ocpp-version 1.6 --response --payload @boot-response.json
 
 # Build a frame
@@ -862,7 +862,7 @@ ocppctl frame encode --type callerror --id 1 --error-code NotImplemented --descr
 ```
 
 ```console
-$ ocppctl validate BootNotification --ocpp-version 2.0.1 --payload '{"reason":"Booted","chargingStation":{"vendorName":"OTFabric","model":"X"}}'
+$ ocppctl validate BootNotification --ocpp-version 2.0.1 --payload '{"reason":"Booted","chargingStation":{"vendorName":"OT Fabric","model":"X"}}'
 invalid: BootNotification request of OCPP 2.0.1
   reason: "Booted" is not one of the allowed values (PropertyConstraintViolation)
 ```
@@ -893,7 +893,7 @@ Some variables are shared by the client and the server, with a meaning for each:
 | **OCPPCTL_ALLOW** | list | **`server start`**: accept connections only from these addresses or CIDR prefixes | `--allow` | any |
 | **OCPPCTL_BOOT** | bool | **`client`** one-shot commands: send a BootNotification first and require Accepted | `--boot` | false |
 | **OCPPCTL_BOOT_MODEL** | string | Model of the `--boot` BootNotification | `--boot-model` | ocppctl |
-| **OCPPCTL_BOOT_VENDOR** | string | Vendor of the `--boot` BootNotification | `--boot-vendor` | OTFabric |
+| **OCPPCTL_BOOT_VENDOR** | string | Vendor of the `--boot` BootNotification | `--boot-vendor` | OT Fabric |
 | **OCPPCTL_COMPRESSION** | bool | **`client`**: offer permessage-deflate | `--compression` | false |
 | **OCPPCTL_CONFIG** | string | **`client run`**: station model; **`server start`**: CSMS model (YAML or JSON) | `--config` | built-in model |
 | **OCPPCTL_CONNECT_TIMEOUT** | duration | **`client`**: dial, TLS and WebSocket handshake timeout | `--connect-timeout` | 10s |

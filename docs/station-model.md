@@ -47,7 +47,7 @@ The model is read and checked, every problem at once, before the station connect
 ```yaml
 # What the station says about itself in its BootNotification.
 station:
-  vendor: OTFabric
+  vendor: OT Fabric
   model: Simulator
   serial: SIM-0001
   firmware: 1.0.0
@@ -300,7 +300,7 @@ ocppctl client run --url 'wss://csms.example.com/ocpp/LOAD{001..100}' --stagger 
 ```console
 $ ocppctl client run --url ws://localhost:9000/CS201 --insecure-transport --ocpp-version 2.0.1
 20:49:35.361 CS201 connected tls=false compression=false
-20:49:35.362 CS201 call_sent BootNotification {"chargingStation":{"firmwareVersion":"1.0.0","model":"Simulator","serialNumber":"SIM-0001","vendorName":"OTFabric"},"reason":"PowerUp"}
+20:49:35.362 CS201 call_sent BootNotification {"chargingStation":{"firmwareVersion":"1.0.0","model":"Simulator","serialNumber":"SIM-0001","vendorName":"OT Fabric"},"reason":"PowerUp"}
 20:49:35.362 CS201 call_result BootNotification 0 ms {"currentTime":"2026-10-18T20:49:35.362Z","interval":300,"status":"Accepted"}
 20:49:35.362 CS201 booted heartbeat every 5m0s
 20:49:35.362 CS201 call_sent StatusNotification {"connectorId":1,"connectorStatus":"Available","evseId":1,"timestamp":"2026-10-18T20:49:35.362Z"}

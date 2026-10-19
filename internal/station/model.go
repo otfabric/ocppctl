@@ -383,7 +383,7 @@ const DemoYAML = `# ocppctl simulated Charging Station: "ocppctl client run --co
 
 # What the station says about itself in its BootNotification.
 station:
-  vendor: OTFabric
+  vendor: OT Fabric
   model: Simulator
   serial: SIM-0001
   firmware: 1.0.0

@@ -63,7 +63,7 @@ the CALLERROR code a peer would answer with) and exits 3.`,
 		Example: `
   # Check a request before sending it
   ocppctl validate BootNotification --ocpp-version 2.0.1 \
-    --payload '{"reason":"PowerUp","chargingStation":{"vendorName":"OTFabric","model":"X"}}'
+    --payload '{"reason":"PowerUp","chargingStation":{"vendorName":"OT Fabric","model":"X"}}'
 
   # Check a response a CSMS sent, from a file
   ocppctl validate BootNotification --ocpp-version 1.6 --response --payload @boot-response.json

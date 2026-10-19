@@ -53,7 +53,7 @@ name: smoke-2.0.1          # optional; default: the file name without extension
 version: "2.0.1"           # optional; the version to offer
 steps:
   - call: BootNotification
-    payload: {reason: PowerUp, chargingStation: {vendorName: OTFabric, model: Simulator}}
+    payload: {reason: PowerUp, chargingStation: {vendorName: OT Fabric, model: Simulator}}
     expect: {status: Accepted}
 ```
 
