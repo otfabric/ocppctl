@@ -34,7 +34,7 @@ type Common struct {
 
 // NewCommon returns the defaults.
 func NewCommon() Common {
-	return Common{Target: conn.NewTarget(), BootVendor: "OT Fabric", BootModel: "ocppctl", OutputFormat: "text"}
+	return Common{Target: conn.NewTarget(), BootVendor: "OTFabric", BootModel: "ocppctl", OutputFormat: "text"}
 }
 
 // CallConfig configures `client call`.

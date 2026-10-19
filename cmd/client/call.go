@@ -31,7 +31,7 @@ may have acted on it, so do not blindly resend it.`,
 		Example: `
   # A BootNotification in OCPP 2.0.1
   ocppctl client call BootNotification --url wss://csms.example.com/ocpp/CS001 --ocpp-version 2.0.1 \
-    --payload '{"reason":"PowerUp","chargingStation":{"vendorName":"OT Fabric","model":"Sim"}}'
+    --payload '{"reason":"PowerUp","chargingStation":{"vendorName":"OTFabric","model":"Sim"}}'
 
   # A payload from a file, after booting
   ocppctl client call StatusNotification --url wss://csms.example.com/ocpp/CS001 --boot --payload @status.json

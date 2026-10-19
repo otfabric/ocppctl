@@ -5,7 +5,7 @@ version: "2.0.1"
 steps:
   - name: boot
     call: BootNotification
-    payload: {reason: PowerUp, chargingStation: {vendorName: OT Fabric, model: Simulator}}
+    payload: {reason: PowerUp, chargingStation: {vendorName: OTFabric, model: Simulator}}
     expect:
       status: Accepted
   - call: StatusNotification

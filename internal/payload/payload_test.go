@@ -19,8 +19,8 @@ func TestPayloadsValidate(t *testing.T) {
 				t.Errorf("OCPP %s %s %s: %v", v, action, b, err)
 			}
 		}
-		check("BootNotification", Boot{Vendor: "OT Fabric", Model: "Sim", Serial: "S1", Firmware: "1.0", Reason: "PowerUp"}.Build(v))
-		check("BootNotification", Boot{Vendor: "OT Fabric", Model: "Sim", Reason: "PowerUp"}.Build(v))
+		check("BootNotification", Boot{Vendor: "OTFabric", Model: "Sim", Serial: "S1", Firmware: "1.0", Reason: "PowerUp"}.Build(v))
+		check("BootNotification", Boot{Vendor: "OTFabric", Model: "Sim", Reason: "PowerUp"}.Build(v))
 		check("Authorize", Authorize{Token: "04A1B2C3", Type: "ISO14443"}.Build(v))
 		status := "Available"
 		check("StatusNotification", Status{EVSE: 1, Connector: 1, Status: status, ErrorCode: "NoError"}.Build(v))

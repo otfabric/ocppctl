@@ -39,7 +39,7 @@ Fields that do not apply are omitted, not null, unless the tables below say othe
   "target": "ws://127.0.0.1:9000/CS001",
   "version": "2.0.1",
   "action": "BootNotification",
-  "request": {"chargingStation": {"model": "ocppctl", "vendorName": "OT Fabric"}, "reason": "PowerUp"},
+  "request": {"chargingStation": {"model": "ocppctl", "vendorName": "OTFabric"}, "reason": "PowerUp"},
   "response": {"currentTime": "2026-10-18T20:48:54.125Z", "interval": 300, "status": "Accepted"},
   "duration_ms": 0,
   "validated": true,
