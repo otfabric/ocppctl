@@ -85,7 +85,7 @@ func Wrap(err error, action string, stateChanging bool) error {
 	}
 	switch {
 	case errors.Is(err, context.Canceled):
-		return errs.New(errs.KindInternal, errs.CodeContextCanceled, "interrupted", err)
+		return errs.New(errs.KindInterrupted, errs.CodeContextCanceled, "interrupted", err)
 	case errors.As(err, &ce):
 		return errs.New(errs.KindNegative, errs.CodeCallError,
 			fmt.Sprintf("%s: the peer answered with CALLERROR %s%s", action, ce.Code, suffix(ce.Description)), err).

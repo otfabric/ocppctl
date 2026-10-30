@@ -39,7 +39,7 @@ ocppctl server start [--config csms.yaml] [flags]
 | `--rate-limit`, `--rate-burst` | `OCPPCTL_RATE_LIMIT`, `OCPPCTL_RATE_BURST` | 0 | handle at most this many messages a second per station (more wait; OCPP has no "too many" error); the burst defaults to the rate, rounded up |
 | `--allow` | `OCPPCTL_ALLOW` | any | accept connections only from these addresses or CIDR prefixes (others: HTTP 403) |
 | `--duration` | `OCPPCTL_DURATION` | until Ctrl-C | stop after this long, e.g. `10m` |
-| `--format` | `OCPPCTL_OUTPUT_FORMAT` | `text` | events as text, json (JSON Lines) or table |
+| `--format` | `OCPPCTL_FORMAT` | `text` | events as text, json (JSON Lines) or table |
 | `--debug` | | false | every frame and go-ocpp's log on stderr (never credentials) |
 
 Everything is checked before the server listens: a bad flag combination, an unreadable

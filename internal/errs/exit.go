@@ -10,6 +10,7 @@ const (
 	ExitProtocol     = 6
 	ExitPartial      = 7
 	ExitInternal     = 10
+	ExitInterrupted  = 130
 )
 
 // ExitCodeForKind maps Kind to exit code for fatal errors.
@@ -25,6 +26,8 @@ func ExitCodeForKind(k Kind) int {
 		return ExitTimeout
 	case KindProtocol, KindNegative:
 		return ExitProtocol
+	case KindInterrupted:
+		return ExitInterrupted
 	case KindOutput, KindInternal:
 		return ExitInternal
 	default:

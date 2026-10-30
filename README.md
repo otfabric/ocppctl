@@ -137,7 +137,7 @@ ocppctl is a test and diagnostic tool, not a compliance test: passing a scenario
 | Scenarios        | **`client script`**: calls with expectations (equality, regex, presence, one-of), waits for CALLs from the CSMS with answers, silence checks, variables, disconnect/reconnect; pass/fail per step and exit code 7. |
 | CSMS             | **`server start`**: every version and security profile, passwords per station, client certificates, a model for boot status, tokens, transaction ids and per-action answers, an event stream; **`server call`** and **`server stations`** through a control socket. |
 | Offline          | **`actions`**, **`validate`**, **`frame decode|encode`**, **`cert hash`**. |
-| `--format`       | Every command that prints a result accepts **`--format text\|json\|table`** (or **`OCPPCTL_OUTPUT_FORMAT`**); streams write JSON Lines. |
+| `--format`       | Every command that prints a result accepts **`--format text\|json\|table`** (or **`OCPPCTL_FORMAT`**); streams write JSON Lines. |
 | `--debug`        | Every frame sent and received, and go-ocpp's log, on stderr. |
 | Completion       | Shell completion for bash, zsh, fish and PowerShell; flags with a fixed set of values (**`--format`**, **`--ocpp-version`**, **`--status`**, **`--reason`**, …) complete to those values. |
 
@@ -372,7 +372,7 @@ Every command has `--help`, with a description and examples. Action names are ca
 
 **Global flag:** `--debug` — trace every frame sent and received, and go-ocpp's log, to stderr, and print the chain of causes after an error. Frames, not handshake headers: credentials are never traced.
 
-**Output format (`--format`):** every command that prints a result accepts **`--format text`** (default), **`json`** or **`table`**, or set **`OCPPCTL_OUTPUT_FORMAT`**. It controls **only** the result on **stdout**. Progress (`connected to … as CS001 (OCPP 2.1)`), summaries and the debug trace go to **stderr**, so stdout can be piped or parsed as it is. The JSON shapes are a stable contract: see [docs/json-output.md](docs/json-output.md).
+**Output format (`--format`):** every command that prints a result accepts **`--format text`** (default), **`json`** or **`table`**, or set **`OCPPCTL_FORMAT`**. It controls **only** the result on **stdout**. Progress (`connected to … as CS001 (OCPP 2.1)`), summaries and the debug trace go to **stderr**, so stdout can be piped or parsed as it is. The JSON shapes are a stable contract: see [docs/json-output.md](docs/json-output.md).
 
 **Streams:** `client run` and `server start` write one record per event: one line (**text**), one JSON object per line (**json**, JSON Lines) or one table row (**table**). They run until interrupted with Ctrl-C, which ends them normally, or for `--duration`.
 
@@ -387,7 +387,8 @@ Every command has `--help`, with a description and examples. Action names are ca
 | 5 | Timeout: no response (`outcome_unknown` when the request may have changed state) |
 | 6 | The peer answered with a CALLERROR, an invalid response, or did not accept the boot |
 | 7 | Partial success: a valid result that holds failures (failed scenario steps, failed stations) |
-| 10 | Output or internal error, or interrupted |
+| 10 | Output or internal error |
+| 130 | Interrupted before a result |
 
 See [docs/exitcodes.md](docs/exitcodes.md) for the details and the `code` values.
 
@@ -873,7 +874,7 @@ invalid: BootNotification request of OCPP 2.0.1
 
 ## Environment Variable Configuration
 
-Many flags can also be set through an environment variable, which is convenient for automation and for flags you would otherwise repeat on every command (`OCPPCTL_URL`, `OCPPCTL_PASSWORD`, `OCPPCTL_OUTPUT_FORMAT`). A flag on the command line wins over the environment; `--help` shows the variable of each flag as `[env: …]`. A value that cannot be parsed (a number that is not one, a boolean other than `true`/`false`/`1`/`0`) stops ocppctl at startup with exit 3. Lists are comma-separated. A flag that is **required** (`--id-token` of `client authorize`, `--station` of `server call`, …) must still be given on the command line, except `--url`, which `OCPPCTL_URL` fills.
+Many flags can also be set through an environment variable, which is convenient for automation and for flags you would otherwise repeat on every command (`OCPPCTL_URL`, `OCPPCTL_PASSWORD`, `OCPPCTL_FORMAT`). A flag on the command line wins over the environment; `--help` shows the variable of each flag as `[env: …]`. A value that cannot be parsed (a number that is not one, a boolean other than `true`/`false`/`1`/`0`) stops ocppctl at startup with exit 3. Lists are comma-separated. A flag that is **required** (`--id-token` of `client authorize`, `--station` of `server call`, …) must still be given on the command line, except `--url`, which `OCPPCTL_URL` fills.
 
 ```console
 export OCPPCTL_URL=wss://csms.example.com/ocpp/CS001
@@ -905,7 +906,7 @@ Some variables are shared by the client and the server, with a meaning for each:
 | **OCPPCTL_NO_AUTH** | bool | **`server start`**: accept every station without authentication | `--no-auth` | false |
 | **OCPPCTL_OCPP_VERSION** | list | **`client`**: versions to offer; **`server start`**: versions to accept; **`actions`**, **`validate`**, **`frame`**: the one version | `--ocpp-version` | 2.1,2.0.1,1.6 (`client send`: 2.1; offline: 2.0.1) |
 | **OCPPCTL_OUTPUT** | string | **`server generate-config`**: file to write (`-`: stdout) | `--output` | - |
-| **OCPPCTL_OUTPUT_FORMAT** | string | Output format: text, json or table | `--format` | text |
+| **OCPPCTL_FORMAT** | string | (`OCPPCTL_OUTPUT_FORMAT` stays accepted) Output format: text, json or table | `--format` | text |
 | **OCPPCTL_PASSWORD** | string | **`client`**: the HTTP Basic password itself, when `--password-file` is not given. Read when the command runs, never shown in `--help` or output | | |
 | **OCPPCTL_PASSWORD_FILE** | string | **`client`**: file holding the HTTP Basic password | `--password-file` | |
 | **OCPPCTL_PASSWORDS_FILE** | string | **`server start`**: file of `identity:password` lines | `--passwords-file` | |
@@ -981,7 +982,7 @@ It does not conform to the OCA schema of the version the CSMS chose; the error n
 
 ### How do I use ocppctl in scripts and CI?
 
-Pass `--format json` (or set `OCPPCTL_OUTPUT_FORMAT=json`). Progress goes to stderr, the result to stdout, and a failure returns one JSON error object with a stable exit code. `client script` exits 7 when a step fails. See [docs/json-output.md](docs/json-output.md), [docs/exitcodes.md](docs/exitcodes.md) and [docs/scenarios.md](docs/scenarios.md).
+Pass `--format json` (or set `OCPPCTL_FORMAT=json`). Progress goes to stderr, the result to stdout, and a failure returns one JSON error object with a stable exit code. `client script` exits 7 when a step fails. See [docs/json-output.md](docs/json-output.md), [docs/exitcodes.md](docs/exitcodes.md) and [docs/scenarios.md](docs/scenarios.md).
 
 ### Can I turn off TLS certificate verification?
 

@@ -11,7 +11,8 @@
 | 5 | Timeout (`timeout`): no response in time |
 | 6 | Protocol (`protocol`, `call_error`): the peer answered with a CALLERROR, sent a response that does not conform to the OCA schema, violated the OCPP-J framing, or did not accept a `--boot` BootNotification |
 | 7 | Partial success (`ExitPartial`): a **valid** result was written, and it holds failures: a `client script` step that failed, or a `client run` station that failed while others ran |
-| 10 | Output / internal (`output`, `internal`): the result could not be written, the command was interrupted before it had a result, or something unexpected happened |
+| 10 | Output / internal (`output`, `internal`): the result could not be written, or something unexpected happened |
+| 130 | Interrupted (`interrupted`): Ctrl-C or SIGTERM before a one-shot command had its result |
 
 **Kind vs code:** `kind` drives the exit code; `code` in the JSON error object is stable for machines. Do not parse the human `message`.
 
@@ -24,7 +25,8 @@
 | `call_error` | 6 | `call_error` (the peer answered with a CALLERROR; see `ocpp`), `boot_not_accepted` (the BootNotification of `--boot` was answered Pending or Rejected) |
 | `protocol` | 6 | `invalid_response` (the response does not conform to the OCA schema), `protocol_violation` (the peer broke the OCPP-J framing) |
 | `output` | 10 | `json_encode_failed`, `table_render_failed`, `output_write_failed`, `output_file_write_failed`, `output_file_create_failed` |
-| `internal` | 10 | `context_canceled` (interrupted with Ctrl-C before a result), `internal_unexpected` |
+| `internal` | 10 | `internal_unexpected` |
+| `interrupted` | 130 | `context_canceled` (interrupted with Ctrl-C before a result) |
 
 `kind` is `call_error` for a refusal by the peer and `protocol` for a peer that broke the rules; both exit 6.
 
@@ -108,3 +110,7 @@ An invalid payload is a result, not an error: `validate` writes the result (with
 ## `--debug`
 
 `--debug` adds the frame trace, go-ocpp's log and, after a fatal error, the chain of causes (`cause: …` lines) on stderr. It does not change stdout or the exit code.
+
+**Organisation table:** these codes follow the OT Fabric CLI exit-code table. ocppctl does not use `1`, `8` and `9`: they keep their organisation meaning and are not reused for anything else.
+
+**Format variable:** `OCPPCTL_FORMAT` is the name to use; `OCPPCTL_OUTPUT_FORMAT` stays accepted. When both are set, `OCPPCTL_FORMAT` wins.

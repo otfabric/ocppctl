@@ -10,7 +10,8 @@ const (
 	KindTimeout      Kind = "timeout"
 	KindProtocol     Kind = "protocol"
 	// KindNegative is a request the peer answered and refused: a CALLERROR.
-	KindNegative Kind = "call_error"
-	KindOutput   Kind = "output"
-	KindInternal Kind = "internal"
+	KindNegative    Kind = "call_error"
+	KindOutput      Kind = "output"
+	KindInternal    Kind = "internal"
+	KindInterrupted Kind = "interrupted"
 )

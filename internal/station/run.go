@@ -28,7 +28,7 @@ type RunConfig struct {
 	NoReconnect  bool   `flag:"no-reconnect" desc:"Exit when the connection is lost instead of reconnecting with the OCPP back-off"`
 	PingInterval string `flag:"ping-interval" env:"OCPPCTL_PING_INTERVAL" desc:"WebSocket ping interval (0: no pings)"`
 	Stagger      string `flag:"stagger" desc:"Delay between the start of one station and the next, with a {N..M} identity range"`
-	OutputFormat string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 	Debug        bool   `flag:"-"`
 }
 

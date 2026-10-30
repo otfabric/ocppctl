@@ -37,7 +37,7 @@ func version(s string) (ocpp.Version, error) {
 type ActionsConfig struct {
 	Version      string `flag:"ocpp-version" env:"OCPPCTL_OCPP_VERSION" desc:"OCPP version: 1.6, 2.0.1 or 2.1"`
 	From         string `flag:"from" desc:"Only the actions sent by: station or csms (DataTransfer, sent by both, is always listed)"`
-	OutputFormat string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 }
 
 // Actions lists the actions of a version.
@@ -66,7 +66,7 @@ type ValidateConfig struct {
 	Version      string `flag:"ocpp-version" env:"OCPPCTL_OCPP_VERSION" desc:"OCPP version: 1.6, 2.0.1 or 2.1"`
 	Response     bool   `flag:"response" desc:"Validate a response (CALLRESULT payload) instead of a request"`
 	Payload      string `flag:"payload" desc:"Payload: JSON, @file, or - for stdin"`
-	OutputFormat string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 	Action       string `flag:"-"`
 }
 
@@ -111,7 +111,7 @@ func Validate(cfg *ValidateConfig, stdin io.Reader) (*types.ValidateResult, erro
 type FrameDecodeConfig struct {
 	Version      string `flag:"ocpp-version" env:"OCPPCTL_OCPP_VERSION" desc:"OCPP version whose framing applies: 1.6, 2.0.1 or 2.1"`
 	NoValidate   bool   `flag:"no-validate" desc:"Do not validate the payload of a CALL or SEND against its schema"`
-	OutputFormat string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 	Frame        string `flag:"-"`
 }
 
@@ -169,7 +169,7 @@ type FrameEncodeConfig struct {
 	ErrorCode    string `flag:"error-code" desc:"Error code of a callerror or callresulterror"`
 	Description  string `flag:"description" desc:"Error description of a callerror or callresulterror"`
 	Details      string `flag:"details" desc:"Error details of a callerror or callresulterror: a JSON object (default {})"`
-	OutputFormat string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 }
 
 // FrameTypes are the --type values of `frame encode`.
@@ -237,7 +237,7 @@ type CertHashConfig struct {
 	Cert         string `flag:"cert" desc:"PEM file of the certificate"`
 	Issuer       string `flag:"issuer" desc:"PEM file of the issuer's certificate (default: the certificate itself, for a self-signed root)"`
 	Hash         string `flag:"hash" desc:"Hash algorithm: sha256, sha384 or sha512"`
-	OutputFormat string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 }
 
 // HashAlgorithms are the --hash values of `cert hash`.

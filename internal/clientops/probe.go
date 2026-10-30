@@ -19,7 +19,7 @@ import (
 type ProbeConfig struct {
 	conn.Target
 	EachVersion  bool   `flag:"each-version" desc:"Connect once per offered version, to learn every version the CSMS accepts"`
-	OutputFormat string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 	Debug        bool   `flag:"-"`
 }
 

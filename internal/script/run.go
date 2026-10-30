@@ -27,7 +27,7 @@ type Config struct {
 	conn.Target
 	KeepGoing    bool     `flag:"keep-going" desc:"Run the remaining steps after a step fails (default: skip them)"`
 	Vars         []string `flag:"var" desc:"Variable NAME=VALUE for ${NAME} in payloads (repeatable)"`
-	OutputFormat string   `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string   `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 	Debug        bool     `flag:"-"`
 	File         string   `flag:"-"`
 }

@@ -59,7 +59,7 @@ type StartConfig struct {
 	RateBurst         int      `flag:"rate-burst" env:"OCPPCTL_RATE_BURST" desc:"Burst of --rate-limit (default: the rate, rounded up)"`
 	Allow             []string `flag:"allow" env:"OCPPCTL_ALLOW" desc:"Accept connections only from these addresses or CIDR prefixes (default: any)"`
 	Duration          string   `flag:"duration" env:"OCPPCTL_DURATION" desc:"Stop after this long, such as 10m (default: run until interrupted)"`
-	OutputFormat      string   `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format of the events: text, json (JSON Lines) or table"`
+	OutputFormat      string   `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format of the events: text, json (JSON Lines) or table"`
 	Debug             bool     `flag:"-"`
 }
 

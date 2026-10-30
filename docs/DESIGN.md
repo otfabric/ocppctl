@@ -339,7 +339,7 @@ The reference is [server-config.md](server-config.md).
 
 As the siblings:
 
-- `--format text|json|table` (`OCPPCTL_OUTPUT_FORMAT`), default `text`.
+- `--format text|json|table` (`OCPPCTL_FORMAT`), default `text`.
   stdout carries only results; progress, connection state and `--debug`
   frames go to stderr. Streams are JSON Lines. No colour.
 - JSON field names are snake_case, durations `*_ms`, lists never null,
