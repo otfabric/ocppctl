@@ -1,5 +1,16 @@
 # ocppctl Releases
 
+## v0.2.1
+
+**Date:** 2026-10-31
+**Previous release:** v0.2.0
+
+### Summary
+
+Builds on go-ocpp v0.1.4. No command changes.
+
+---
+
 ## v0.2.0
 
 **Date:** 2026-10-30
