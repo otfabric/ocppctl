@@ -36,7 +36,7 @@ Besides the connection flags every `client` command has (`--url`, `--ocpp-versio
 | `--no-reconnect` | | false | end with exit 4 when the connection is lost, instead of reconnecting |
 | `--ping-interval` | `OCPPCTL_PING_INTERVAL` | `0` | send a WebSocket ping at this interval and treat the connection as lost when the pong is late (`0`: no pings) |
 | `--stagger` | | `0` | with an identity range: delay between the start of one station and the next |
-| `--format` | `OCPPCTL_OUTPUT_FORMAT` | `text` | events as text, JSON Lines or table rows |
+| `--format` | `OCPPCTL_FORMAT` | `text` | events as text, JSON Lines or table rows |
 
 `--timeout` is the response timeout of every CALL the station sends. With `--debug` every frame and go-ocpp's log go to stderr.
 

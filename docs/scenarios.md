@@ -42,7 +42,7 @@ Besides the connection flags every `client` command has (`--url`, `--ocpp-versio
 |---|---|
 | `--keep-going` | run the remaining steps after a step fails (default: skip them) |
 | `--var NAME=VALUE` | a variable for `${NAME}` in payloads (repeatable); its value is a string |
-| `--format` | the result as text, table or JSON (`OCPPCTL_OUTPUT_FORMAT`) |
+| `--format` | the result as text, table or JSON (`OCPPCTL_FORMAT`) |
 
 `--timeout` (default 30s) is the default timeout of `call` and `wait_for` steps.
 

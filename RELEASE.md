@@ -1,5 +1,28 @@
 # ocppctl Releases
 
+## v0.2.0
+
+**Date:** unreleased
+**Previous release:** v0.1.1
+
+### Summary
+
+**Breaking for scripts:** the exit codes follow the OT Fabric organisation table (ADR-0006 of otfabric/engineering). Nothing else changes in the commands.
+
+### Exit codes
+
+| Case | Old | New | JSON error |
+|---|---|---|---|
+| `context_canceled` (interrupted before a result) | 10 | 130 | kind `interrupted`, was `internal` |
+
+Every other exit code is unchanged. See [docs/exitcodes.md](docs/exitcodes.md).
+
+### Environment
+
+`OCPPCTL_FORMAT` is now the canonical name of the format variable; `OCPPCTL_OUTPUT_FORMAT` stays accepted, and `OCPPCTL_FORMAT` wins when both are set.
+
+---
+
 ## v0.1.1
 
 **Date:** 2026-10-19  

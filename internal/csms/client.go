@@ -23,7 +23,7 @@ import (
 // ControlConfig is what the commands that talk to a running server share.
 type ControlConfig struct {
 	ControlSocket string `flag:"control-socket" env:"OCPPCTL_CONTROL_SOCKET" desc:"Control socket of the running ocppctl server start"`
-	OutputFormat  string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat  string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 }
 
 // NewControlConfig returns the defaults.
@@ -135,7 +135,7 @@ func request(ctx context.Context, path string, req ControlRequest, wait time.Dur
 	sc.Buffer(make([]byte, 64<<10), maxControlLine)
 	if !sc.Scan() {
 		if ctx.Err() != nil {
-			return nil, errs.New(errs.KindInternal, errs.CodeContextCanceled, "interrupted", ctx.Err())
+			return nil, errs.New(errs.KindInterrupted, errs.CodeContextCanceled, "interrupted", ctx.Err())
 		}
 		err := sc.Err()
 		if err == nil {

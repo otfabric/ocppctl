@@ -26,6 +26,22 @@ func MustLoadFromEnv(cfg interface{}) {
 	}
 }
 
+// legacyEnv maps a canonical environment variable to its older spelling, which stays
+// accepted (ADR-0006 of otfabric/engineering).
+var legacyEnv = map[string]string{"OCPPCTL_FORMAT": "OCPPCTL_OUTPUT_FORMAT"}
+
+// Getenv returns the value of the environment variable name. The older spelling is read
+// when name is empty; the canonical name wins when both are set.
+func Getenv(name string) string {
+	if v := os.Getenv(name); v != "" {
+		return v
+	}
+	if old, ok := legacyEnv[name]; ok {
+		return os.Getenv(old)
+	}
+	return ""
+}
+
 func loadFromEnvStruct(v reflect.Value) error {
 	t := v.Type()
 	var errs []error
@@ -45,7 +61,7 @@ func loadFromEnvStruct(v reflect.Value) error {
 		if tag == "" {
 			continue
 		}
-		envValue := os.Getenv(tag)
+		envValue := Getenv(tag)
 		if envValue == "" {
 			continue
 		}

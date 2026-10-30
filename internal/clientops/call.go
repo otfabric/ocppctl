@@ -28,7 +28,7 @@ type Common struct {
 	Boot         bool   `flag:"boot" env:"OCPPCTL_BOOT" desc:"Send a BootNotification first and require it to be Accepted (many CSMSs refuse anything before)"`
 	BootVendor   string `flag:"boot-vendor" env:"OCPPCTL_BOOT_VENDOR" desc:"Vendor name of the --boot BootNotification"`
 	BootModel    string `flag:"boot-model" env:"OCPPCTL_BOOT_MODEL" desc:"Model of the --boot BootNotification"`
-	OutputFormat string `flag:"format" env:"OCPPCTL_OUTPUT_FORMAT" desc:"Output format: text, json or table"`
+	OutputFormat string `flag:"format" env:"OCPPCTL_FORMAT" desc:"Output format: text, json or table"`
 	Debug        bool   `flag:"-"`
 }
 
