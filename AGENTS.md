@@ -6,7 +6,7 @@ Command-line toolkit for OCPP 1.6J, 2.0.1 and 2.1 built on [go-ocpp](https://git
 
 ## Organisation standards
 
-This repository follows **otfabric/engineering policy 1.1**, profile **cli** (`.otfabric/policy.yaml`, mode `enforce`). Where this file and the organisation standards disagree, this file wins here — say so in your report.
+This repository follows **otfabric/engineering policy 1.2**, profile **cli** (`.otfabric/policy.yaml`, mode `enforce`). Where this file and the organisation standards disagree, this file wins here — say so in your report.
 
 ## Where the truth lives
 
