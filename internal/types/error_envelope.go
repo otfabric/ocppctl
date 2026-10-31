@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 package types
 
 // ErrorInfo is the structured error object for JSON output and embedded per-row failures.
