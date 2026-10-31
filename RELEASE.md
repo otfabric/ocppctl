@@ -1,5 +1,17 @@
 # ocppctl Releases
 
+## v0.2.2
+
+**Date:** 2026-10-31
+**Previous release:** v0.2.1
+
+### Changed
+
+- Policy 1.2: build output in `bin/` and `release/`, a per-package coverage floor, and more tests and CI. No change in behaviour.
+- Built on go-ocpp v0.1.5.
+
+---
+
 ## v0.2.1
 
 **Date:** 2026-10-31
