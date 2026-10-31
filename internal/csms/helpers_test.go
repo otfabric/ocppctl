@@ -131,7 +131,8 @@ func (r *running) stop() {
 	r.once.Do(func() {
 		r.cancel()
 		select {
-		case <-r.done:
+		case err := <-r.done:
+			_ = err // what Run returns after the cancel is not what these tests check
 		case <-time.After(10 * time.Second):
 		}
 	})
