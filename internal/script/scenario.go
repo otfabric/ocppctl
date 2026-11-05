@@ -121,6 +121,9 @@ func (p *Payload) UnmarshalYAML(n *yaml.Node) error {
 		switch {
 		case strings.HasPrefix(n.Value, "@"):
 			p.File = n.Value[1:]
+			if strings.TrimSpace(p.File) == "" {
+				return fmt.Errorf("line %d: \"@\" names no file: write \"@file\"", n.Line)
+			}
 		case strings.HasPrefix(strings.TrimSpace(n.Value), "{"):
 			p.JSON = json.RawMessage(n.Value)
 		default:
@@ -151,9 +154,20 @@ func (m *Matcher) UnmarshalYAML(n *yaml.Node) error {
 		}
 		if _, op := ops["regex"]; op || hasKey(ops, "present") || hasKey(ops, "one_of") {
 			m.isOp = true
+			if len(ops) > 1 {
+				return fmt.Errorf("line %d: a condition is one of regex, present or one_of", n.Line)
+			}
 			for k, v := range ops {
+				// An operator without a value ("regex:") would check nothing: an empty
+				// regex matches everything, a null present means absent.
+				if v.Tag == "!!null" {
+					return fmt.Errorf("line %d: %s needs a value", v.Line, k)
+				}
 				switch k {
 				case "regex":
+					if v.Kind != yaml.ScalarNode {
+						return fmt.Errorf("line %d: regex is a string", v.Line)
+					}
 					re, err := regexp.Compile(v.Value)
 					if err != nil {
 						return fmt.Errorf("line %d: regex %q: %w", v.Line, v.Value, err)
@@ -166,7 +180,7 @@ func (m *Matcher) UnmarshalYAML(n *yaml.Node) error {
 					}
 					m.Present = &b
 				case "one_of":
-					if err := v.Decode(&m.OneOf); err != nil {
+					if err := v.Decode(&m.OneOf); err != nil || v.Kind != yaml.SequenceNode {
 						return fmt.Errorf("line %d: one_of is a list", v.Line)
 					}
 				default:
@@ -199,7 +213,7 @@ func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 
 // Load reads and checks a scenario. Payload files are read relative to its directory.
 func Load(path string) (*Scenario, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // the operator's own scenario
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +277,7 @@ func (s *Scenario) resolve(dir string) error {
 			if !filepath.IsAbs(f) {
 				f = filepath.Join(dir, f)
 			}
-			b, err := os.ReadFile(f) //nolint:gosec // the operator's own payload file
+			b, err := os.ReadFile(filepath.Clean(f))
 			if err != nil {
 				bad(i, "%v", err)
 				continue

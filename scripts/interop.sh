@@ -13,7 +13,7 @@
 #      every station-sent sample sent by the reference station, then every
 #      CSMS-sent sample with "server call --yes".
 #
-# Usage: scripts/interop.sh [ocpp-interop tag]   (default v0.4.1)
+# Usage: scripts/interop.sh [ocpp-interop tag]   (default v0.5.3)
 # Needs docker and jq. Writes reports/interop-<tag>.tsv and prints a summary.
 # A CALLERROR answer is recorded as "callerror" with its code: a protocol
 # success, but not a pass. A message the reference could not or would not send
@@ -21,7 +21,7 @@
 # is skipped silently.
 set -uo pipefail
 
-TAG=${1:-v0.4.1}
+TAG=${1:-v0.5.3}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 BIN=$(mktemp -d)/ocppctl
 OUT=$ROOT/reports/interop-$TAG.tsv

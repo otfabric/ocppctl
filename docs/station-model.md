@@ -183,7 +183,8 @@ Before connecting, the model is checked and every problem reported:
 - `station.vendor` and `station.model` are required; `model` is at most 20 characters, `vendor` at most 20 when OCPP 1.6 is offered and 50 otherwise;
 - at least one EVSE; EVSE ids ≥ 1 and unique; at least one connector per EVSE, ids ≥ 1 and unique within the EVSE;
 - `heartbeat_interval` and every `meter_interval` at least 1s (or left out);
-- every session names a connector the model has, has an `id_token`, a non-negative `power_w` and `after`, and a positive `duration`;
+- every session names a connector the model has, has an `id_token`, a non-negative, finite `power_w` and a non-negative `after`, and a positive `duration`;
+- `remote_power_w`, when given, is non-negative and finite;
 - `device_model` names are `Component.Variable`, and mutabilities one of the three;
 - every `answers` entry names an action a CSMS sends in some OCPP version (not one the station sends), its value is one of the four behaviours or an object, and an object is a valid response in at least one of the versions offered (`--ocpp-version`) that have the action.
 

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -230,5 +231,31 @@ func TestGenerateConfig(t *testing.T) {
 	}
 	if code, stdout, _ := srvRun(t, "server"); code != 0 || !strings.Contains(stdout, "generate-config") {
 		t.Errorf("help: %d %s", code, stdout)
+	}
+}
+
+// failingWriter fails every write, like stdout on a full disk.
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("no space left on device") }
+
+// A server whose events cannot be written stops, with the output exit code, instead of
+// serving stations unseen until interrupted.
+func TestStartStopsWhenOutputFails(t *testing.T) {
+	done := make(chan int, 1)
+	var errOut srvBuffer
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		done <- cmd.Run(ctx, []string{"server", "start", "--listen", "127.0.0.1:0", "--insecure-transport", "--no-auth",
+			"--control-socket", ""}, nil, failingWriter{}, &errOut)
+	}()
+	select {
+	case code := <-done:
+		if code != 10 || !strings.Contains(errOut.String(), "no space left") {
+			t.Errorf("exit %d: %s", code, errOut.String())
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server start runs on although its events cannot be written")
 	}
 }

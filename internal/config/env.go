@@ -13,7 +13,7 @@ import (
 
 // LoadFromEnv populates tagged fields from the process environment.
 // Malformed numeric or boolean values produce errors (joined when multiple vars fail).
-func LoadFromEnv(cfg interface{}) error {
+func LoadFromEnv(cfg any) error {
 	v := reflect.ValueOf(cfg)
 	if v.Kind() != reflect.Pointer || v.Elem().Kind() != reflect.Struct {
 		return nil
@@ -22,7 +22,7 @@ func LoadFromEnv(cfg interface{}) error {
 }
 
 // MustLoadFromEnv calls [LoadFromEnv] and panics if any env value is invalid (startup safety).
-func MustLoadFromEnv(cfg interface{}) {
+func MustLoadFromEnv(cfg any) {
 	if err := LoadFromEnv(cfg); err != nil {
 		panic(fmt.Sprintf("ocppctl: invalid environment: %v", err))
 	}

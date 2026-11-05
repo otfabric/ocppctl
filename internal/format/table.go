@@ -10,8 +10,7 @@ import (
 
 // RenderTable renders headers and rows as column-aligned text using tabwriter.
 func RenderTable(m TableMarshaler) (string, error) {
-	headers := m.TableHeaders()
-	rows := m.TableRows()
+	headers, rows := tableCells(m)
 	if len(headers) == 0 {
 		return "", fmt.Errorf("table has no headers")
 	}
@@ -33,4 +32,28 @@ func RenderTable(m TableMarshaler) (string, error) {
 		return "", err
 	}
 	return b.String(), nil
+}
+
+// tableCells returns the headers and rows of m with every cell escaped by EscapeLine: a
+// cell holds one line, and a tab in it would split the column.
+func tableCells(m TableMarshaler) ([]string, [][]string) {
+	headers := escapeCells(m.TableHeaders())
+	rows := m.TableRows()
+	out := make([][]string, len(rows))
+	for i, row := range rows {
+		out[i] = escapeCells(row)
+	}
+	return headers, out
+}
+
+// escapeCells returns a copy of cells, escaped: the marshaler's slices are not changed.
+func escapeCells(cells []string) []string {
+	if cells == nil {
+		return nil
+	}
+	out := make([]string, len(cells))
+	for i, c := range cells {
+		out[i] = EscapeLine(c)
+	}
+	return out
 }

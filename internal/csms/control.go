@@ -33,6 +33,10 @@ const (
 // maxControlLine bounds one request line.
 const maxControlLine = 4 << 20
 
+// maxCallTimeout is the longest a CALL from the control socket waits for its response: the
+// response timeout of the go-ocpp server.
+const maxCallTimeout = time.Hour
+
 // ControlRequest is one request on the control socket.
 type ControlRequest struct {
 	Op string `json:"op"`
@@ -100,14 +104,12 @@ func (ct *control) serve(ctx context.Context) {
 		ct.mu.Lock()
 		ct.open[conn] = true
 		ct.mu.Unlock()
-		ct.wg.Add(1)
-		go func() {
-			defer ct.wg.Done()
+		ct.wg.Go(func() {
 			ct.handle(ctx, conn)
 			ct.mu.Lock()
 			delete(ct.open, conn)
 			ct.mu.Unlock()
-		}()
+		})
 	}
 }
 
@@ -186,7 +188,12 @@ func (c *CSMS) Call(ctx context.Context, req ControlRequest) (*types.CallResult,
 	}
 	timeout := c.callTimeout
 	if req.TimeoutMS > 0 {
-		timeout = time.Duration(req.TimeoutMS) * time.Millisecond
+		// go-ocpp gives up after maxCallTimeout anyway; a larger timeout_ms would also
+		// overflow time.Duration into a negative one, which fails the CALL at once.
+		timeout = maxCallTimeout
+		if req.TimeoutMS < int64(maxCallTimeout/time.Millisecond) {
+			timeout = time.Duration(req.TimeoutMS) * time.Millisecond
+		}
 	}
 	ev := types.NewServerEvent("call_sent")
 	ev.Identity, ev.Version, ev.Action, ev.Request = sess.ID(), v.String(), req.Action, payload
@@ -206,8 +213,7 @@ func (c *CSMS) Call(ctx context.Context, req ControlRequest) (*types.CallResult,
 		}
 	}
 	if err != nil {
-		var ce *ocpp.CallError
-		if errors.As(err, &ce) {
+		if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 			ev.ErrorCode, ev.ErrorDescription = string(ce.Code), ce.Description
 		} else {
 			ev.Reason = err.Error()

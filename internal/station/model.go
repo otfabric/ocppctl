@@ -10,7 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
+	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -153,7 +156,7 @@ func (d Duration) D() time.Duration { return time.Duration(d) }
 
 // Load reads a model from a YAML or JSON file and validates it for the versions given.
 func Load(path string, versions []ocpp.Version) (*Model, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // the operator's own model file
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -240,6 +243,9 @@ func (m *Model) Validate(versions []ocpp.Version) error {
 	if d := m.MeterInterval.D(); d < 0 || (d > 0 && d < time.Second) {
 		bad("meter_interval %s: use at least 1s", d)
 	}
+	if !validPower(m.RemotePowerW) {
+		bad("remote_power_w must be a number, not negative")
+	}
 	for i, s := range m.Sessions {
 		what := fmt.Sprintf("sessions[%d]", i)
 		if !m.hasConnector(s.EVSE, s.Connector) {
@@ -248,8 +254,8 @@ func (m *Model) Validate(versions []ocpp.Version) error {
 		if s.IDToken == "" {
 			bad("%s: id_token is required", what)
 		}
-		if s.PowerW < 0 {
-			bad("%s: power_w must not be negative", what)
+		if !validPower(s.PowerW) {
+			bad("%s: power_w must be a number, not negative", what)
 		}
 		if s.After.D() < 0 || s.Duration.D() <= 0 {
 			bad("%s: after must not be negative and duration must be positive", what)
@@ -308,15 +314,17 @@ func (m *Model) validateAnswer(action string, a Answer, versions []ocpp.Version,
 	}
 }
 
+// validPower reports whether w is a power the energy register can grow by: finite and
+// not negative (NaN and infinity would make the meter values unencodable as JSON).
+func validPower(w float64) bool { return w >= 0 && !math.IsInf(w, 1) }
+
 func (m *Model) hasConnector(evse, connector int) bool {
 	for _, e := range m.EVSEs {
 		if e.ID != evse {
 			continue
 		}
-		for _, c := range e.Connectors {
-			if c == connector {
-				return true
-			}
+		if slices.Contains(e.Connectors, connector) {
+			return true
 		}
 	}
 	return false

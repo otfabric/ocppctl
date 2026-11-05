@@ -15,10 +15,12 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"maps"
 	"net"
 	"net/http"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -131,9 +133,7 @@ func (cfg *StartConfig) plan() (*plan, error) {
 		if err != nil {
 			return nil, err
 		}
-		for id, pw := range file {
-			p.passwords[id] = pw
-		}
+		maps.Copy(p.passwords, file)
 	}
 	p.certAuth = cfg.TLSClientCA != ""
 	if p.certAuth && len(p.passwords) > 0 {
@@ -176,27 +176,46 @@ func duration(flag, s string) (time.Duration, error) {
 
 // readPasswords reads identity:password lines; blank lines and # comments are skipped.
 func readPasswords(path string) (map[string]string, error) {
-	f, err := os.Open(path) //nolint:gosec // the operator's own file
+	f, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("--passwords-file: %v", err), err)
 	}
 	defer func() { _ = f.Close() }()
+	return parsePasswords(f, path)
+}
+
+// maxPasswordLine bounds one line of a passwords file.
+const maxPasswordLine = 64 << 10
+
+// parsePasswords reads the identity:password lines of the passwords file name. A UTF-8
+// byte order mark, as some editors write, is not part of the first identity. No error
+// echoes a line: it may hold a password.
+func parsePasswords(r io.Reader, name string) (map[string]string, error) {
 	out := map[string]string{}
-	sc := bufio.NewScanner(f)
-	for n := 1; sc.Scan(); n++ {
+	sc := bufio.NewScanner(r)
+	sc.Buffer(make([]byte, 4<<10), maxPasswordLine)
+	n := 0
+	for sc.Scan() {
+		n++
 		line := strings.TrimRight(sc.Text(), "\r")
+		if n == 1 {
+			line = strings.TrimPrefix(line, "\uFEFF")
+		}
 		if strings.TrimSpace(line) == "" || strings.HasPrefix(strings.TrimSpace(line), "#") {
 			continue
 		}
 		id, pw, ok := strings.Cut(line, ":")
 		id = strings.TrimSpace(id)
 		if !ok || id == "" || pw == "" {
-			// The line is not echoed: it may hold a password.
-			return nil, errs.InvalidInput(errs.CodeInputDecodeFailed, fmt.Sprintf("--passwords-file %s line %d: want identity:password", path, n), nil)
+			return nil, errs.InvalidInput(errs.CodeInputDecodeFailed, fmt.Sprintf("--passwords-file %s line %d: want identity:password", name, n), nil)
 		}
 		out[id] = pw
 	}
 	if err := sc.Err(); err != nil {
+		if errors.Is(err, bufio.ErrTooLong) {
+			return nil, errs.InvalidInput(errs.CodeInputDecodeFailed,
+				fmt.Sprintf("--passwords-file %s line %d: longer than %d bytes", name, n+1, maxPasswordLine), err)
+		}
 		return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("--passwords-file: %v", err), err)
 	}
 	return out, nil
@@ -306,7 +325,10 @@ func Run(ctx context.Context, cfg *StartConfig, emit func(types.ServerEvent), st
 		defer cancel()
 	}
 
-	hs := &http.Server{Handler: c, ReadHeaderTimeout: server.DefaultHandshakeTimeout, ErrorLog: newErrorLog(cfg.Debug, stderr)}
+	// IdleTimeout, as go-ocpp's own server has it: a connection that was not upgraded (a
+	// refused request) does not stay open waiting for another request.
+	hs := &http.Server{Handler: c, ReadHeaderTimeout: server.DefaultHandshakeTimeout, IdleTimeout: server.DefaultHandshakeTimeout,
+		ErrorLog: newErrorLog(cfg.Debug, stderr)}
 	served := make(chan error, 1)
 	go func() { served <- hs.Serve(ln) }()
 	if ctl != nil {
@@ -394,7 +416,7 @@ func (c *CSMS) options(cfg *StartConfig, stderr io.Writer) []server.Option {
 		opts = append(opts, server.WithIncomingRateLimit(cfg.RateLimit, burst))
 	}
 	// CALLs from the control socket carry their own deadline.
-	opts = append(opts, server.WithResponseTimeout(time.Hour))
+	opts = append(opts, server.WithResponseTimeout(maxCallTimeout))
 	opts = append(opts, server.WithSessionHandler(c.connected, c.disconnected))
 	if cfg.Debug && stderr != nil {
 		opts = append(opts,
@@ -434,14 +456,14 @@ func (c *CSMS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ev := types.NewServerEvent("refused")
 		ev.Remote, ev.Reason = r.RemoteAddr, "path "+r.URL.EscapedPath()+" is not "+c.plan.prefix+"<identity> (HTTP 404)"
 		c.emit(ev)
-		http.Error(w, "not found: connect to "+c.plan.prefix+"<identity>", http.StatusNotFound)
+		refuse(w, "not found: connect to "+c.plan.prefix+"<identity>", http.StatusNotFound)
 		return
 	}
 	if len(c.plan.allow) > 0 && !allowed(c.plan.allow, r.RemoteAddr) {
 		ev := types.NewServerEvent("refused")
 		ev.Remote, ev.Reason = r.RemoteAddr, "address not allowed (HTTP 403)"
 		c.emit(ev)
-		http.Error(w, "forbidden", http.StatusForbidden)
+		refuse(w, "forbidden", http.StatusForbidden)
 		return
 	}
 	rw := &recordingWriter{ResponseWriter: w, onUpgrade: func(h http.Header) {
@@ -455,6 +477,13 @@ func (c *CSMS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		c.mu.Unlock()
 	}()
 	c.srv.ServeHTTP(rw, r)
+}
+
+// refuse answers a request that is not upgraded and closes its connection, as go-ocpp
+// does with the refusals of its own: a refused peer has nothing more to ask on it.
+func refuse(w http.ResponseWriter, msg string, status int) {
+	w.Header().Set("Connection", "close")
+	http.Error(w, msg, status)
 }
 
 func allowed(list []netip.Prefix, remote string) bool {
@@ -482,7 +511,7 @@ func (c *CSMS) connected(s *server.Session) {
 	c.mu.Unlock()
 	ev := types.NewServerEvent("connected")
 	ev.Identity, ev.Version, ev.Remote, ev.SessionID = s.ID(), s.Version().String(), s.RemoteAddr(), s.SessionID()
-	ev.TLS, ev.Compression = ptr(s.TLS() != nil), &compressed
+	ev.TLS, ev.Compression = new(s.TLS() != nil), &compressed
 	c.emit(ev)
 }
 

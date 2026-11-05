@@ -23,7 +23,8 @@ type TableMarshaler interface {
 
 // Write renders v to w according to f. JSON always uses encoding/json.
 // Text requires TextMarshaler; table requires TableMarshaler.
-// Text and table outputs get exactly one trailing newline after successful write.
+// Text and table outputs get exactly one trailing newline after successful write, and
+// their control characters are escaped (Escape; table cells EscapeLine).
 // JSON is encoded fully into memory first, then written in one Write (no partial JSON on encode failure).
 func Write(w io.Writer, f OutputFormat, v any) error {
 	switch f {
@@ -65,8 +66,9 @@ func writeJSON(w io.Writer, v any) error {
 	return err
 }
 
+// writeTextWithTrailingNewline writes text output, escaped for a terminal (see Escape).
 func writeTextWithTrailingNewline(w io.Writer, s string) error {
-	s = strings.TrimSuffix(s, "\n")
+	s = Escape(strings.TrimSuffix(s, "\n"))
 	if _, err := io.WriteString(w, s+"\n"); err != nil {
 		return err
 	}

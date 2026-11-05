@@ -938,7 +938,7 @@ Everything known to be wrong, missing or undecided in this release is in
   requires: frames lost on close, integral numbers such as `20000.0` refused for integer
   fields, and a SEND dropped when the peer closes right after it.
 - **Findings in the reference implementations** (U1 to U5) from the
-  [interoperability run](reports/interop-v0.4.1.tsv), with their root causes.
+  [interoperability run](reports/interop-v0.5.3.tsv), with their root causes.
 - **Limitations** of ocppctl (L1 to L9), such as the missing `example` command and the
   fixed set of simulated behaviours.
 - **Open questions** (Q1 to Q7) on behaviour that could reasonably go the other way, such
@@ -990,7 +990,7 @@ No. go-ocpp does not allow it, and neither does ocppctl. Trust a test CA with `-
 
 ### Which implementations has it been tested with?
 
-ocppctl v0.1.1 was run against the five reference implementations of [ocpp-interop](https://github.com/otfabric/ocpp-interop) v0.4.1 with `scripts/interop.sh`, with every fixture sample in both directions: ocppctl as the station against the CSMSs of mobilityhouse (1.6, 2.0.1, 2.1), ChargeTime (1.6, 2.0.1), lorenzodonini (1.6, 2.0.1) and CitrineOS (1.6, 2.0.1, 2.1), and the stations of mobilityhouse, ChargeTime, lorenzodonini and EVerest libocpp (1.6, 2.0.1, 2.1) against ocppctl's server. Of 1218 exchanges, 1154 passed, 29 were answered with a CALLERROR, 32 were skipped because the reference could not send the message, and 3 failed on schema-invalid responses of ocpp-go; every one is explained in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). If you use ocppctl with a CSMS or station it has trouble with, please [open an issue](https://github.com/otfabric/ocppctl/issues) with the `--debug` trace.
+ocppctl v0.3.0 was run against the five reference implementations of [ocpp-interop](https://github.com/otfabric/ocpp-interop) v0.5.3 with `scripts/interop.sh`, with every fixture sample in both directions: ocppctl as the station against the CSMSs of mobilityhouse (1.6, 2.0.1, 2.1), ChargeTime (1.6, 2.0.1), lorenzodonini (1.6, 2.0.1) and CitrineOS (1.6, 2.0.1, 2.1), and the stations of mobilityhouse, ChargeTime, lorenzodonini and EVerest libocpp (1.6, 2.0.1, 2.1) against ocppctl's server. Of 1218 exchanges, 1154 passed, 29 were answered with a CALLERROR, 32 were skipped because the reference could not send the message, and 3 failed on schema-invalid responses of ocpp-go; every one is explained in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). If you use ocppctl with a CSMS or station it has trouble with, please [open an issue](https://github.com/otfabric/ocppctl/issues) with the `--debug` trace.
 
 ### Is it safe to point ocppctl at a production CSMS?
 
@@ -1071,7 +1071,7 @@ Tests need no charger and no network beyond the loopback interface: they run the
 
 ### Interoperability
 
-`scripts/interop.sh [tag]` runs ocppctl against the reference implementations of [ocpp-interop](https://github.com/otfabric/ocpp-interop) (default tag v0.4.1) with every fixture sample, in both roles, and writes `reports/interop-<tag>.tsv`. It needs Docker and jq.
+`scripts/interop.sh [tag]` runs ocppctl against the reference implementations of [ocpp-interop](https://github.com/otfabric/ocpp-interop) (default tag v0.5.3) with every fixture sample, in both roles, and writes `reports/interop-<tag>.tsv`. It needs Docker and jq.
 
 ## Version History
 

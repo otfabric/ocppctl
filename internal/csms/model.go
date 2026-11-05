@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/otfabric/go-ocpp"
@@ -25,9 +27,9 @@ type Model struct {
 	// Stations lists known stations: their password and per-station answers.
 	Stations []StationSpec `yaml:"stations,omitempty" json:"stations,omitempty"`
 	// Authorization is the token list Authorize and transactions are checked against.
-	Authorization AuthorizationSpec `yaml:"authorization,omitempty" json:"authorization,omitempty"`
+	Authorization AuthorizationSpec `yaml:"authorization,omitempty" json:"authorization"`
 	// Transactions configures the OCPP 1.6 transaction ids.
-	Transactions TransactionSpec `yaml:"transactions,omitempty" json:"transactions,omitempty"`
+	Transactions TransactionSpec `yaml:"transactions,omitempty" json:"transactions"`
 	// Actions overrides the answer to individual actions.
 	Actions []ActionSpec `yaml:"actions,omitempty" json:"actions,omitempty"`
 }
@@ -99,7 +101,7 @@ const defaultInterval = 300
 
 // Load reads and validates a model file for the versions served.
 func Load(path string, versions []ocpp.Version) (*Model, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // the operator's own model file
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +142,7 @@ func (m *Model) Validate(versions []ocpp.Version) error {
 		bad("boot.status %q: use Accepted, Pending or Rejected", m.Boot.Status)
 	}
 	if m.Boot.Interval == nil {
-		m.Boot.Interval = ptr(defaultInterval)
+		m.Boot.Interval = new(defaultInterval)
 	} else if *m.Boot.Interval < 0 {
 		bad("boot.interval %d: use a number of seconds, 0 or more", *m.Boot.Interval)
 	}
@@ -164,7 +166,7 @@ func (m *Model) Validate(versions []ocpp.Version) error {
 		}
 	}
 	if m.Transactions.FirstID == nil {
-		m.Transactions.FirstID = ptr(1)
+		m.Transactions.FirstID = new(1)
 	} else if *m.Transactions.FirstID < 1 {
 		bad("transactions.first_id %d: use 1 or more", *m.Transactions.FirstID)
 	}
@@ -316,24 +318,12 @@ func Default() *Model {
 }
 
 func hasVersion(list []ocpp.Version, v ocpp.Version) bool {
-	for _, x := range list {
-		if x == v {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, v)
 }
 
 func contains(list []string, s string) bool {
-	for _, x := range list {
-		if x == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, s)
 }
-
-func ptr[T any](v T) *T { return &v }
 
 // DefaultYAML is the commented model `server generate-config` writes, and the model of a
 // server started without --config.

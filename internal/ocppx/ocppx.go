@@ -54,7 +54,7 @@ func ParseVersions(list []string) ([]ocpp.Version, error) {
 	var out []ocpp.Version
 	seen := map[ocpp.Version]bool{}
 	for _, item := range list {
-		for _, s := range strings.Split(item, ",") {
+		for s := range strings.SplitSeq(item, ",") {
 			if strings.TrimSpace(s) == "" {
 				continue
 			}

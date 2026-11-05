@@ -21,6 +21,8 @@ const (
 	CodeListenFailed           = "listen_failed"
 	CodeControlSocketFailed    = "control_socket_failed"
 	CodeStationNotConnected    = "station_not_connected"
+	// The queue of CALLs waiting to be sent to the peer is full: nothing was sent.
+	CodeStationBusy = "station_busy"
 	// A command that may change a real station was not confirmed with --yes.
 	CodeConfirmationRequired = "confirmation_required"
 

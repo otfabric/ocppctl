@@ -79,12 +79,10 @@ func (d dispatcher) DispatchSend(_ context.Context, p ocpp.Peer, action string, 
 
 // errorCode is the CALLERROR code of a validation failure.
 func errorCode(err error) string {
-	var ve *ocpp.ValidationError
-	if errors.As(err, &ve) {
+	if ve, ok := errors.AsType[*ocpp.ValidationError](err); ok {
 		return string(ve.Code)
 	}
-	var ce *ocpp.CallError
-	if errors.As(err, &ce) {
+	if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 		return string(ce.Code)
 	}
 	return string(ocpp.FormationViolation)
@@ -93,12 +91,10 @@ func errorCode(err error) string {
 // answer returns the CALLRESULT payload of a CALL, or a *ocpp.CallError.
 func (a *answerer) answer(v ocpp.Version, id, action string, payload json.RawMessage) (json.RawMessage, error) {
 	if err := ocppx.ValidateRequest(v, action, payload); err != nil {
-		var ve *ocpp.ValidationError
-		if errors.As(err, &ve) {
+		if ve, ok := errors.AsType[*ocpp.ValidationError](err); ok {
 			return nil, ve.CallError()
 		}
-		var ce *ocpp.CallError
-		if errors.As(err, &ce) {
+		if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 			return nil, ce
 		}
 		return nil, ocpp.NewCallError(ocpp.FormationViolation, err.Error())

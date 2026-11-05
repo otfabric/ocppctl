@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/otfabric/go-ocpp"
@@ -115,6 +116,9 @@ type FrameDecodeConfig struct {
 	Frame        string `flag:"-"`
 }
 
+// stdinSlack is the whitespace `frame decode -` reads around a frame of the largest size.
+const stdinSlack = 4 << 10
+
 // FrameDecode decodes an OCPP-J frame ("-" reads it from stdin).
 func FrameDecode(cfg *FrameDecodeConfig, stdin io.Reader) (*types.FrameResult, error) {
 	v, err := version(cfg.Version)
@@ -123,8 +127,15 @@ func FrameDecode(cfg *FrameDecodeConfig, stdin io.Reader) (*types.FrameResult, e
 	}
 	data := []byte(cfg.Frame)
 	if cfg.Frame == "-" {
-		if data, err = io.ReadAll(stdin); err != nil {
+		// A frame is at most ocppj.DefaultMaxFrameSize; whitespace around it is allowed.
+		// Reading stops past that, so that an endless stdin does not fill memory.
+		limit := int64(ocppj.DefaultMaxFrameSize + stdinSlack)
+		if data, err = io.ReadAll(io.LimitReader(stdin, limit+1)); err != nil {
 			return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, err.Error(), err)
+		}
+		if int64(len(data)) > limit {
+			return nil, errs.InvalidInput(errs.CodeProtocolViolation,
+				fmt.Sprintf("the frame on stdin is larger than the largest OCPP-J frame (%d bytes)", ocppj.DefaultMaxFrameSize), nil)
 		}
 	}
 	data = []byte(strings.TrimSpace(string(data)))
@@ -140,8 +151,7 @@ func FrameDecode(cfg *FrameDecodeConfig, stdin io.Reader) (*types.FrameResult, e
 			res.Violation = &types.Violation{Reason: lerr.Error(), ErrorCode: string(ocppj.RPCErrorCode(v))}
 		} else if verr := ocppx.ValidateRequest(v, f.Action, f.Payload); verr != nil {
 			ok = false
-			var ve *ocpp.ValidationError
-			if errors.As(verr, &ve) {
+			if ve, ok := errors.AsType[*ocpp.ValidationError](verr); ok {
 				res.Violation = &types.Violation{Field: ve.Field, Reason: ve.Reason, ErrorCode: string(ve.Code)}
 			} else {
 				res.Violation = &types.Violation{Reason: verr.Error()}
@@ -279,7 +289,7 @@ func readCert(flag, file string) (*x509.Certificate, error) {
 	if file == "" {
 		return nil, errs.InvalidInput(errs.CodeInvalidInput, flag+" is required", nil)
 	}
-	b, err := os.ReadFile(file)
+	b, err := os.ReadFile(filepath.Clean(file))
 	if err != nil {
 		return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("%s: %v", flag, err), err)
 	}

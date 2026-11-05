@@ -51,8 +51,7 @@ func TestDispatchInvalidRequestIsRecordedWithItsCode(t *testing.T) {
 func TestDispatchUnknownActionIsACallError(t *testing.T) {
 	d := &Default{Version: ocpp.V16}
 	_, err := d.Dispatch(context.Background(), nil, "NoSuchAction", json.RawMessage(`{}`))
-	var ce *ocpp.CallError
-	if !errors.As(err, &ce) {
+	if _, ok := errors.AsType[*ocpp.CallError](err); !ok {
 		t.Fatalf("error %v, want a CALLERROR", err)
 	}
 	if rec := d.Received(); len(rec) != 1 || rec[0].ErrorCode == "" {

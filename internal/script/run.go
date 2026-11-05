@@ -161,7 +161,13 @@ func (r *runner) end() {
 }
 
 func (r *runner) dial(ctx context.Context) error {
-	c, err := conn.Dial(ctx, r.p, conn.Options{
+	// Every call step bounds its own wait (its timeout, or --timeout); the connection's
+	// response timeout must not cut a step with a longer timeout short.
+	p := *r.p
+	for i := range r.sc.Steps {
+		p.Timeout = max(p.Timeout, time.Duration(r.sc.Steps[i].Timeout))
+	}
+	c, err := conn.Dial(ctx, &p, conn.Options{
 		Handler: func(v ocpp.Version) ocpp.Dispatcher { return &dispatcher{r: r, v: v, def: &answer.Default{Version: v}} },
 		Debug:   r.cfg.Debug, Stderr: r.errw,
 	})
@@ -246,8 +252,7 @@ func (r *runner) call(ctx context.Context, st *Step, action string, req json.Raw
 	defer cancel()
 	var resp json.RawMessage
 	err := r.c.Call(cctx, action, req, &resp)
-	var ce *ocpp.CallError
-	if errors.As(err, &ce) {
+	if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 		sr.ErrorCode = string(ce.Code)
 		if st.ExpectError != "" {
 			if st.ExpectError == "any" || st.ExpectError == string(ce.Code) {
@@ -444,8 +449,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, p ocpp.Peer, action string, r
 	r.mu.Unlock()
 	if waited {
 		if err := ocppx.ValidateRequest(d.v, action, req); err != nil {
-			var ve *ocpp.ValidationError
-			if errors.As(err, &ve) {
+			if ve, ok := errors.AsType[*ocpp.ValidationError](err); ok {
 				return nil, ve.CallError()
 			}
 		}
@@ -476,8 +480,7 @@ func (d *dispatcher) unexpected(ctx context.Context, p ocpp.Peer, action string,
 	r := d.r
 	resp, err := d.def.Dispatch(ctx, p, action, req)
 	rec := types.Received{Time: types.Millis(time.Now()), Action: action, Request: req, Response: resp}
-	var ce *ocpp.CallError
-	if errors.As(err, &ce) {
+	if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 		rec.ErrorCode = string(ce.Code)
 	}
 	r.mu.Lock()

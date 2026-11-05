@@ -42,7 +42,7 @@ func lookup(doc any, path string) (any, bool) {
 func splitPath(path string) []string {
 	path = strings.ReplaceAll(strings.ReplaceAll(path, "[", "."), "]", "")
 	var parts []string
-	for _, p := range strings.Split(path, ".") {
+	for p := range strings.SplitSeq(path, ".") {
 		if p != "" {
 			parts = append(parts, p)
 		}

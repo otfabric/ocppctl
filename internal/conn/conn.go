@@ -10,12 +10,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +26,7 @@ import (
 	"github.com/otfabric/go-ocpp/client"
 
 	"github.com/otfabric/ocppctl/internal/errs"
+	"github.com/otfabric/ocppctl/internal/format"
 	"github.com/otfabric/ocppctl/internal/ocpperr"
 	"github.com/otfabric/ocppctl/internal/ocppx"
 )
@@ -74,11 +77,17 @@ func (t Target) Parse() (*Parsed, error) {
 		return nil, errs.InvalidInput(errs.CodeInvalidURL, "--url is required (or OCPPCTL_URL)", nil)
 	}
 	u, err := url.Parse(t.URL)
-	if err != nil || (u.Scheme != "ws" && u.Scheme != "wss") || u.Host == "" {
-		return nil, errs.InvalidInput(errs.CodeInvalidURL, fmt.Sprintf("invalid --url %q: want ws[s]://host[:port]/path/<identity>", t.URL), err)
-	}
-	if u.User != nil {
+	if err == nil && u.User != nil {
 		return nil, errs.InvalidInput(errs.CodeInvalidURL, "credentials do not go in the URL: use --password-file or OCPPCTL_PASSWORD", nil)
+	}
+	if err != nil || (u.Scheme != "ws" && u.Scheme != "wss") || u.Host == "" {
+		// The URL may hold a password (it did not parse, or is not ws[s]): neither the
+		// message nor the cause repeats it. url.Error.Err is the reason without the URL.
+		var cause error
+		if ue, ok := errors.AsType[*url.Error](err); ok {
+			cause = ue.Err
+		}
+		return nil, errs.InvalidInput(errs.CodeInvalidURL, fmt.Sprintf("invalid --url %q: want ws[s]://host[:port]/path/<identity>", redact(t.URL)), cause)
 	}
 	p := &Parsed{URL: t.URL, Compression: t.Compression, Insecure: t.InsecureTransport}
 	seg := u.EscapedPath()
@@ -101,7 +110,10 @@ func (t Target) Parse() (*Parsed, error) {
 	for _, h := range t.Headers {
 		name, value, ok := strings.Cut(h, "=")
 		if !ok || strings.TrimSpace(name) == "" {
-			return nil, errs.InvalidInput(errs.CodeInvalidInput, fmt.Sprintf("invalid --header %q: want NAME=VALUE", h), nil)
+			// A header may carry a token: the error names the header, never its value.
+			name, _, _ = strings.Cut(name, ":")
+			return nil, errs.InvalidInput(errs.CodeInvalidInput,
+				fmt.Sprintf("invalid --header %q (value not shown): want NAME=VALUE", strings.TrimSpace(name)), nil)
 		}
 		p.Headers = append(p.Headers, [2]string{strings.TrimSpace(name), value})
 	}
@@ -123,6 +135,24 @@ func (t Target) Parse() (*Parsed, error) {
 	return p, nil
 }
 
+// redact replaces the user information of a URL that may not parse ("user:password@" in
+// its authority) with "REDACTED@".
+func redact(raw string) string {
+	start := 0
+	if i := strings.Index(raw, "://"); i >= 0 {
+		start = i + 3
+	}
+	end := len(raw)
+	if i := strings.IndexAny(raw[start:], "/?#"); i >= 0 {
+		end = start + i
+	}
+	at := strings.LastIndex(raw[start:end], "@")
+	if at < 0 {
+		return raw
+	}
+	return raw[:start] + "REDACTED" + raw[start+at:]
+}
+
 func duration(flag, s string) (time.Duration, error) {
 	d, err := time.ParseDuration(strings.TrimSpace(s))
 	if err != nil || d <= 0 {
@@ -133,7 +163,7 @@ func duration(flag, s string) (time.Duration, error) {
 
 func password(file string) (string, error) {
 	if file != "" {
-		b, err := os.ReadFile(file)
+		b, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return "", errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("--password-file: %v", err), err)
 		}
@@ -306,7 +336,10 @@ func Trace(w io.Writer) ocpp.FrameObserver {
 		}
 		mu.Lock()
 		defer mu.Unlock()
-		_, _ = fmt.Fprintf(w, "%s %s %s %s\n", time.Now().UTC().Format("15:04:05.000"), info.StationID, arrow, frame)
+		// The frame is the peer's, as it came: escaped, it cannot drive the terminal or
+		// start a trace line of its own.
+		_, _ = fmt.Fprintf(w, "%s %s %s %s\n", time.Now().UTC().Format("15:04:05.000"),
+			format.EscapeLine(info.StationID), arrow, format.EscapeLine(string(frame)))
 	}
 }
 

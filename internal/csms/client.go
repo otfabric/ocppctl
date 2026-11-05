@@ -3,9 +3,9 @@
 package csms
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -131,21 +131,22 @@ func request(ctx context.Context, path string, req ControlRequest, wait time.Dur
 	if _, err := c.Write(append(line, '\n')); err != nil {
 		return nil, fail(err)
 	}
-	sc := bufio.NewScanner(c)
-	sc.Buffer(make([]byte, 64<<10), maxControlLine)
-	if !sc.Scan() {
+	// The response is not bounded by maxControlLine: it carries what stations sent (their
+	// identities, their responses), and it comes from the server this user runs.
+	var resp ControlResponse
+	if err := json.NewDecoder(c).Decode(&resp); err != nil {
 		if ctx.Err() != nil {
 			return nil, errs.New(errs.KindInterrupted, errs.CodeContextCanceled, "interrupted", ctx.Err())
 		}
-		err := sc.Err()
-		if err == nil {
+		var syn *json.SyntaxError
+		var typ *json.UnmarshalTypeError
+		switch {
+		case errors.Is(err, io.EOF):
 			err = io.ErrUnexpectedEOF
+		case errors.As(err, &syn), errors.As(err, &typ):
+			err = fmt.Errorf("unreadable response: %w", err)
 		}
 		return nil, fail(err)
-	}
-	var resp ControlResponse
-	if err := json.Unmarshal(sc.Bytes(), &resp); err != nil {
-		return nil, fail(fmt.Errorf("unreadable response: %w", err))
 	}
 	if !resp.OK {
 		if resp.Error == nil {

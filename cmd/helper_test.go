@@ -98,7 +98,7 @@ func (r result) decode(t testing.TB, v any) {
 func (r result) lines(t testing.TB) []map[string]any {
 	t.Helper()
 	var out []map[string]any
-	for _, line := range strings.Split(strings.TrimSpace(r.stdout), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(r.stdout), "\n") {
 		if line == "" {
 			continue
 		}

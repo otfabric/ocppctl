@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -162,7 +163,7 @@ func WriteFile(cmd *cobra.Command, path string, force bool, data []byte) error {
 	if force {
 		flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 	}
-	f, err := os.OpenFile(path, flags, 0o600) //nolint:gosec // the operator's own output file
+	f, err := os.OpenFile(filepath.Clean(path), flags, 0o600)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return errs.InvalidInput(errs.CodeOutputFileCreateFailed, fmt.Sprintf("%s exists: pass --force to overwrite it", path), err)
