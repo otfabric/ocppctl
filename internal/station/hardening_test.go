@@ -5,6 +5,8 @@ package station
 import (
 	"context"
 	"encoding/json"
+	"math"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -47,7 +49,8 @@ func TestExpandURLOverflow(t *testing.T) {
 	}
 	// The largest int is a valid identity number: the loop that numbers the stations used
 	// to overflow past it and never end.
-	if got, err := ExpandURL("ws://h/CS{9223372036854775807..9223372036854775807}"); err != nil || len(got) != 1 || got[0] != "ws://h/CS9223372036854775807" {
+	maxInt := strconv.Itoa(math.MaxInt)
+	if got, err := ExpandURL("ws://h/CS{" + maxInt + ".." + maxInt + "}"); err != nil || len(got) != 1 || got[0] != "ws://h/CS"+maxInt {
 		t.Fatalf("one station at the largest int: %v, %v", got, err)
 	}
 	// The largest range still works, and numbers keep their width.
@@ -58,12 +61,13 @@ func TestExpandURLOverflow(t *testing.T) {
 }
 
 func TestSeconds(t *testing.T) {
-	for n, want := range map[int]time.Duration{
-		1:           time.Second,
-		300:         300 * time.Second,
-		18446744074: maxInterval, // n*1e9 wraps to 290 ms
-		9223372037:  maxInterval, // n*1e9 wraps negative
-	} {
+	cases := map[int]time.Duration{1: time.Second, 300: 300 * time.Second, math.MaxInt: maxInterval}
+	if strconv.IntSize == 64 {
+		var wraps, negative int64 = 18446744074, 9223372037
+		cases[int(wraps)] = maxInterval    // n*1e9 wraps to 290 ms
+		cases[int(negative)] = maxInterval // n*1e9 wraps negative
+	}
+	for n, want := range cases {
 		if got := seconds(n); got != want || got <= 0 {
 			t.Errorf("seconds(%d) = %s, want %s", n, got, want)
 		}
@@ -74,6 +78,9 @@ func TestSeconds(t *testing.T) {
 // heartbeat every few hundred milliseconds.
 func TestHugeHeartbeatInterval(t *testing.T) {
 	const huge = "18446744074" // seconds; times 1e9 it wraps to 290 ms
+	if strconv.IntSize < 64 {
+		t.Skip("the interval does not fit an int of this platform, so it cannot overflow a duration")
+	}
 	t.Run("BootNotification", func(t *testing.T) {
 		csms := testcsms.Start(t)
 		csms.Recorder(ocpp.V201).Answer("BootNotification", `{"status":"Accepted","currentTime":"2026-01-01T00:00:00Z","interval":`+huge+`}`)
