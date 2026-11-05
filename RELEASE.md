@@ -7,7 +7,7 @@
 
 ### Summary
 
-Built on go-ocpp v0.2.0. A SAST review (gosec and opengrep, 16 findings to 0, two of them recorded as false positives in sast-triage) and a hardening pass against hostile stations, hostile CSMSs and malformed input: 20 defects fixed, each with a test that failed before the fix, and seven new fuzz targets.
+Built on go-ocpp v0.2.0. A SAST review (gosec and opengrep, 16 findings to 0: fourteen fixed in code, one recorded as a false positive and one as an accepted risk in sast-triage) and a hardening pass against hostile stations, hostile CSMSs and malformed input: 20 defects fixed, each with a test that failed before the fix, and seven new fuzz targets.
 
 ### Changed
 
@@ -33,7 +33,7 @@ Built on go-ocpp v0.2.0. A SAST review (gosec and opengrep, 16 findings to 0, tw
 
 ### Security
 
-- gosec and opengrep at low/low: 16 findings to 0. File reads are cleaned with `filepath.Clean`. The flag binder no longer converts integer types. Two findings are recorded as false positives in otfabric/sast-triage: the name of the `OCPPCTL_PASSWORD` variable (G101), and scenario payload files that may lie outside the scenario's directory (G703), as docs/scenarios.md documents. A scenario reads the files it names: review a scenario from someone else as you would a script.
+- gosec and opengrep at low/low: 16 findings to 0. File reads are cleaned with `filepath.Clean`. The flag binder no longer converts integer types. Two findings are recorded in otfabric/sast-triage: the name of the `OCPPCTL_PASSWORD` variable (G101) as a false positive, and scenario payload files that may lie outside the scenario's directory (G703), as docs/scenarios.md documents, as an accepted risk. A scenario reads the files it names: review a scenario from someone else as you would a script.
 - Go 1.26 floor kept; `go fix` applied. CI and release workflows on otfabric/.github v3.3.1.
 
 ### Interoperability
