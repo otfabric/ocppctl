@@ -199,7 +199,7 @@ func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 
 // Load reads and checks a scenario. Payload files are read relative to its directory.
 func Load(path string) (*Scenario, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // the operator's own scenario
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func (s *Scenario) resolve(dir string) error {
 			if !filepath.IsAbs(f) {
 				f = filepath.Join(dir, f)
 			}
-			b, err := os.ReadFile(f) //nolint:gosec // the operator's own payload file
+			b, err := os.ReadFile(filepath.Clean(f))
 			if err != nil {
 				bad(i, "%v", err)
 				continue

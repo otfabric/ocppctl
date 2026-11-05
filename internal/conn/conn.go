@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -133,7 +134,7 @@ func duration(flag, s string) (time.Duration, error) {
 
 func password(file string) (string, error) {
 	if file != "" {
-		b, err := os.ReadFile(file)
+		b, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return "", errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("--password-file: %v", err), err)
 		}

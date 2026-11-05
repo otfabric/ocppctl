@@ -15,10 +15,12 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"maps"
 	"net"
 	"net/http"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -131,9 +133,7 @@ func (cfg *StartConfig) plan() (*plan, error) {
 		if err != nil {
 			return nil, err
 		}
-		for id, pw := range file {
-			p.passwords[id] = pw
-		}
+		maps.Copy(p.passwords, file)
 	}
 	p.certAuth = cfg.TLSClientCA != ""
 	if p.certAuth && len(p.passwords) > 0 {
@@ -176,7 +176,7 @@ func duration(flag, s string) (time.Duration, error) {
 
 // readPasswords reads identity:password lines; blank lines and # comments are skipped.
 func readPasswords(path string) (map[string]string, error) {
-	f, err := os.Open(path) //nolint:gosec // the operator's own file
+	f, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("--passwords-file: %v", err), err)
 	}
@@ -482,7 +482,7 @@ func (c *CSMS) connected(s *server.Session) {
 	c.mu.Unlock()
 	ev := types.NewServerEvent("connected")
 	ev.Identity, ev.Version, ev.Remote, ev.SessionID = s.ID(), s.Version().String(), s.RemoteAddr(), s.SessionID()
-	ev.TLS, ev.Compression = ptr(s.TLS() != nil), &compressed
+	ev.TLS, ev.Compression = new(s.TLS() != nil), &compressed
 	c.emit(ev)
 }
 

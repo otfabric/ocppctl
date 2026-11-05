@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/otfabric/go-ocpp"
@@ -140,8 +141,7 @@ func FrameDecode(cfg *FrameDecodeConfig, stdin io.Reader) (*types.FrameResult, e
 			res.Violation = &types.Violation{Reason: lerr.Error(), ErrorCode: string(ocppj.RPCErrorCode(v))}
 		} else if verr := ocppx.ValidateRequest(v, f.Action, f.Payload); verr != nil {
 			ok = false
-			var ve *ocpp.ValidationError
-			if errors.As(verr, &ve) {
+			if ve, ok := errors.AsType[*ocpp.ValidationError](verr); ok {
 				res.Violation = &types.Violation{Field: ve.Field, Reason: ve.Reason, ErrorCode: string(ve.Code)}
 			} else {
 				res.Violation = &types.Violation{Reason: verr.Error()}
@@ -279,7 +279,7 @@ func readCert(flag, file string) (*x509.Certificate, error) {
 	if file == "" {
 		return nil, errs.InvalidInput(errs.CodeInvalidInput, flag+" is required", nil)
 	}
-	b, err := os.ReadFile(file)
+	b, err := os.ReadFile(filepath.Clean(file))
 	if err != nil {
 		return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("%s: %v", flag, err), err)
 	}

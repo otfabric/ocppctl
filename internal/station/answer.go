@@ -47,8 +47,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, _ ocpp.Peer, action string, r
 		}
 	}
 	ev := types.StationEvent{Event: "answered", Version: d.v.String(), Action: action, Response: resp}
-	var ce *ocpp.CallError
-	if errors.As(err, &ce) {
+	if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 		ev.ErrorCode = string(ce.Code)
 	} else if err != nil {
 		ev.ErrorCode = string(ocpp.InternalError)
@@ -65,8 +64,7 @@ func (d *dispatcher) DispatchSend(_ context.Context, _ ocpp.Peer, action string,
 
 func (d *dispatcher) answer(ctx context.Context, action string, req json.RawMessage) (json.RawMessage, error) {
 	if err := ocppx.ValidateRequest(d.v, action, req); err != nil {
-		var ve *ocpp.ValidationError
-		if errors.As(err, &ve) {
+		if ve, ok := errors.AsType[*ocpp.ValidationError](err); ok {
 			return nil, ve.CallError()
 		}
 		return nil, err

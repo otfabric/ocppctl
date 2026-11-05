@@ -152,14 +152,12 @@ func Run(ctx context.Context, cfg *RunConfig, p *Prepared, emit func(types.Stati
 		s := New(Options{Parsed: t, Model: p.Model, Reconnect: !cfg.NoReconnect, PingInterval: p.PingInterval,
 			Debug: cfg.Debug, Stderr: stderr, Emit: emit})
 		stations[i] = s
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := s.Run(ctx); err != nil {
 				failures[i] = err
 				emit(types.StationEvent{Time: types.Millis(time.Now()), Station: t.Identity, Event: "error", Message: err.Error()})
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	failed, ran := 0, 0

@@ -100,14 +100,12 @@ func (ct *control) serve(ctx context.Context) {
 		ct.mu.Lock()
 		ct.open[conn] = true
 		ct.mu.Unlock()
-		ct.wg.Add(1)
-		go func() {
-			defer ct.wg.Done()
+		ct.wg.Go(func() {
 			ct.handle(ctx, conn)
 			ct.mu.Lock()
 			delete(ct.open, conn)
 			ct.mu.Unlock()
-		}()
+		})
 	}
 }
 
@@ -206,8 +204,7 @@ func (c *CSMS) Call(ctx context.Context, req ControlRequest) (*types.CallResult,
 		}
 	}
 	if err != nil {
-		var ce *ocpp.CallError
-		if errors.As(err, &ce) {
+		if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 			ev.ErrorCode, ev.ErrorDescription = string(ce.Code), ce.Description
 		} else {
 			ev.Reason = err.Error()

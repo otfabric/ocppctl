@@ -18,7 +18,7 @@ import (
 func listening(t *testing.T, l *live) string {
 	t.Helper()
 	l.waitStdout(t, `"event":"listening"`)
-	for _, line := range strings.Split(l.stdout.String(), "\n") {
+	for line := range strings.SplitSeq(l.stdout.String(), "\n") {
 		var ev struct{ Event, Address string }
 		if json.Unmarshal([]byte(line), &ev) == nil && ev.Event == "listening" {
 			return ev.Address

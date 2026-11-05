@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -153,7 +155,7 @@ func (d Duration) D() time.Duration { return time.Duration(d) }
 
 // Load reads a model from a YAML or JSON file and validates it for the versions given.
 func Load(path string, versions []ocpp.Version) (*Model, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // the operator's own model file
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -313,10 +315,8 @@ func (m *Model) hasConnector(evse, connector int) bool {
 		if e.ID != evse {
 			continue
 		}
-		for _, c := range e.Connectors {
-			if c == connector {
-				return true
-			}
+		if slices.Contains(e.Connectors, connector) {
+			return true
 		}
 	}
 	return false

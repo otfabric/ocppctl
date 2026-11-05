@@ -168,7 +168,7 @@ func TestEventRendering(t *testing.T) {
 	ev := types.NewServerEvent("call_result")
 	ev.Identity, ev.Version, ev.Action, ev.DurationMS = "CS1", "2.0.1", "Reset", &ms
 	ev.Response, ev.ErrorCode, ev.ErrorDescription, ev.Reason = json.RawMessage(`{"status": "Accepted"}`), "X", "d", "r"
-	ev.Address, ev.Versions, ev.ControlSocket, ev.TLS, ev.Compression = "a", []string{"1.6"}, "s", ptr(true), ptr(false)
+	ev.Address, ev.Versions, ev.ControlSocket, ev.TLS, ev.Compression = "a", []string{"1.6"}, "s", new(true), new(false)
 	ev.Request = json.RawMessage(`not json`)
 	text, _ := ev.MarshalTextOutput()
 	for _, want := range []string{"call_result", "CS1", "Reset", `response={"status":"Accepted"}`, "duration_ms=5", "tls=true", "request=not json"} {

@@ -56,13 +56,11 @@ func (d *Default) Dispatch(_ context.Context, _ ocpp.Peer, action string, payloa
 		d.mu.Unlock()
 	}()
 	if err := ocppx.ValidateRequest(d.Version, action, payload); err != nil {
-		var ve *ocpp.ValidationError
-		if errors.As(err, &ve) {
+		if ve, ok := errors.AsType[*ocpp.ValidationError](err); ok {
 			r.ErrorCode = string(ve.Code)
 			return nil, ve.CallError()
 		}
-		var ce *ocpp.CallError
-		if errors.As(err, &ce) {
+		if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 			r.ErrorCode = string(ce.Code)
 		}
 		return nil, err

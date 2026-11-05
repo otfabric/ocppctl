@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"strconv"
 	"sync"
 	"time"
@@ -110,12 +111,8 @@ func New(o Options) *Station {
 		hbChanged: make(chan struct{}, 1),
 		resetCh:   make(chan struct{}, 1),
 	}
-	for k, v := range o.Model.DeviceModel {
-		s.vars[k] = v
-	}
-	for k, v := range o.Model.Configuration {
-		s.conf[k] = v
-	}
+	maps.Copy(s.vars, o.Model.DeviceModel)
+	maps.Copy(s.conf, o.Model.Configuration)
 	s.stats.Identity = s.id
 	return s
 }
@@ -365,8 +362,7 @@ func (s *Station) call(ctx context.Context, action string, req json.RawMessage) 
 			return nil, err
 		}
 		ev := types.StationEvent{Event: "call_error", Version: v.String(), Action: action, DurationMS: &ms, Message: err.Error(), Response: resp}
-		var ce *ocpp.CallError
-		if errors.As(err, &ce) {
+		if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 			ev.ErrorCode = string(ce.Code)
 		} else if e, ok := errs.As(ocpperr.Wrap(err, action, ocppx.StateChanging(action))); ok {
 			ev.ErrorCode = e.Code

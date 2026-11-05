@@ -246,8 +246,7 @@ func (r *runner) call(ctx context.Context, st *Step, action string, req json.Raw
 	defer cancel()
 	var resp json.RawMessage
 	err := r.c.Call(cctx, action, req, &resp)
-	var ce *ocpp.CallError
-	if errors.As(err, &ce) {
+	if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 		sr.ErrorCode = string(ce.Code)
 		if st.ExpectError != "" {
 			if st.ExpectError == "any" || st.ExpectError == string(ce.Code) {
@@ -444,8 +443,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, p ocpp.Peer, action string, r
 	r.mu.Unlock()
 	if waited {
 		if err := ocppx.ValidateRequest(d.v, action, req); err != nil {
-			var ve *ocpp.ValidationError
-			if errors.As(err, &ve) {
+			if ve, ok := errors.AsType[*ocpp.ValidationError](err); ok {
 				return nil, ve.CallError()
 			}
 		}
@@ -476,8 +474,7 @@ func (d *dispatcher) unexpected(ctx context.Context, p ocpp.Peer, action string,
 	r := d.r
 	resp, err := d.def.Dispatch(ctx, p, action, req)
 	rec := types.Received{Time: types.Millis(time.Now()), Action: action, Request: req, Response: resp}
-	var ce *ocpp.CallError
-	if errors.As(err, &ce) {
+	if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 		rec.ErrorCode = string(ce.Code)
 	}
 	r.mu.Lock()
