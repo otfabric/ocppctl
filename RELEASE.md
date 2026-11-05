@@ -1,5 +1,47 @@
 # ocppctl Releases
 
+## v0.3.0
+
+**Date:** 2026-11-05
+**Previous release:** v0.2.2
+
+### Summary
+
+Built on go-ocpp v0.2.0. A SAST review (gosec and opengrep, 16 findings to 0, two of them recorded as false positives in sast-triage) and a hardening pass against hostile stations, hostile CSMSs and malformed input: 20 defects fixed, each with a test that failed before the fix, and seven new fuzz targets.
+
+### Changed
+
+- **New exit code:** `station_busy` (exit 4). `server call` returns it when more than 64 CALLs to the same station are waiting to be sent: this one was not sent, and trying again later is safe. It used to exit 10 with `internal_unexpected`.
+- **Text and table output escape control characters.** Strings a peer chose (identities, action names, CALLERROR descriptions, certificate names, step messages, the `--debug` trace) can no longer move the cursor, recolour the terminal or add lines. Control characters show as `\xNN`. In `server start` events, an identity or action with control characters or spaces is quoted. JSON output is unchanged.
+- **Text output keeps payloads as sent.** Payloads are compacted or indented without re-encoding them, so integers above 2^53 are not rounded and key order is kept.
+- **`server start` stops when its output fails** (for one, a full disk). It exits 10 with `output_write_failed` instead of serving stations with nobody watching.
+- **Refused HTTP requests close their connection** (wrong path, `--allow`), and idle connections are closed after the handshake timeout.
+- **`frame decode -` reads at most one frame** from stdin. More is `protocol_violation`, exit 3.
+- **A scenario step's `timeout` may be longer than `--timeout`.** Before, the step was cut off at `--timeout`.
+- **Scenario conditions need a value.** `{regex: }`, `{present: ~}`, `{one_of: ~}`, a condition with two operators and `payload: "@"` were accepted and checked nothing. They are now scenario errors (exit 3, `invalid_config`).
+- **Station models:** `power_w` must be finite, and `remote_power_w` non-negative and finite.
+- **Errors no longer repeat a secret.** Credentials in a malformed `--url` are redacted. A malformed `--header` error names the header, not its value.
+
+### Fixed
+
+- `--url ws://h/CS{0..99999999999999999999}` and other huge station ranges no longer panic or loop forever.
+- A heartbeat or boot interval from the CSMS that overflows a duration is capped. It used to wrap and make the station heartbeat several times a second.
+- A station whose boot is Pending waits the CSMS's interval. Before, every TriggerMessage restarted the wait, and the station re-sent BootNotification at once.
+- A huge `timeout_ms` on the control socket no longer fails the CALL at once.
+- `server stations` works with very long OCPP 1.6 identities.
+- A passwords file saved with a byte order mark works. A line over 64 KiB is `input_decode_failed` with the line number.
+
+### Security
+
+- gosec and opengrep at low/low: 16 findings to 0. File reads are cleaned with `filepath.Clean`. The flag binder no longer converts integer types. Two findings are recorded as false positives in otfabric/sast-triage: the name of the `OCPPCTL_PASSWORD` variable (G101), and scenario payload files that may lie outside the scenario's directory (G703), as docs/scenarios.md documents. A scenario reads the files it names: review a scenario from someone else as you would a script.
+- Go 1.26 floor kept; `go fix` applied. CI and release workflows on otfabric/.github v3.3.1.
+
+### Interoperability
+
+- `scripts/interop.sh` defaults to ocpp-interop v0.5.3. Of 1218 exchanges, 1154 passed, 29 were answered with a CALLERROR, 32 were skipped and 3 failed, the same as with v0.4.1. The 3 failures are ocpp-go's schema-invalid 2.0.1 responses (`reports/interop-v0.5.3.tsv`).
+
+---
+
 ## v0.2.2
 
 **Date:** 2026-10-31

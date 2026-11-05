@@ -255,6 +255,7 @@ GetPeriodicEventStream. GetLog and GetDiagnostics make the station upload files 
 | 2 | `confirmation_required` | a state-changing CALL without `--yes`; or a usage error |
 | 3 | `unknown_action`, `invalid_payload` | not a CSMS action of the station's version, or the payload fails the schema; nothing was sent |
 | 4 | `station_not_connected` | no session with that identity |
+| 4 | `station_busy` | too many `server call`s to that station are waiting to be sent (go-ocpp queues 64); this one was not sent |
 | 4 | `control_socket_failed` | no server on the control socket |
 | 4 | `connection_lost` | the station disconnected before answering |
 | 5 | `outcome_unknown` | no response in `--timeout` to a state-changing CALL: the station may have acted on it, do not blindly resend |
@@ -262,8 +263,8 @@ GetPeriodicEventStream. GetLog and GetDiagnostics make the station upload files 
 | 6 | `call_error` | the station answered with a CALLERROR (details in `ocpp`) |
 | 6 | `invalid_response` | the response fails the schema |
 
-`station_not_connected` is a transport failure (exit 4): like a refused connection, the
-message did not reach the station, and trying again once it has connected is safe.
+`station_not_connected` and `station_busy` are transport failures (exit 4): like a refused
+connection, the message did not reach the station, and trying again later is safe.
 
 ## Runbook
 

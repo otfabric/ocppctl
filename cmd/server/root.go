@@ -112,10 +112,15 @@ The server runs until interrupted (Ctrl-C), or for --duration.`,
 		return runner.RunStream(cmd, cfg.OutputFormat,
 			func() error { return csms.Check(&cfg) },
 			func(ctx context.Context, out *format.StreamWriter) (int, error) {
+				// Events are what the server is for: once they cannot be written (a full
+				// disk, a closed pipe), it stops instead of serving stations unseen.
+				ctx, stop := context.WithCancel(ctx)
+				defer stop()
 				var writeErr error
 				emit := func(e types.ServerEvent) {
 					if err := out.Write(&e); err != nil && writeErr == nil {
 						writeErr = err
+						stop()
 					}
 				}
 				if err := csms.Run(ctx, &cfg, emit, cmd.ErrOrStderr(), nil); err != nil {

@@ -161,7 +161,13 @@ func (r *runner) end() {
 }
 
 func (r *runner) dial(ctx context.Context) error {
-	c, err := conn.Dial(ctx, r.p, conn.Options{
+	// Every call step bounds its own wait (its timeout, or --timeout); the connection's
+	// response timeout must not cut a step with a longer timeout short.
+	p := *r.p
+	for i := range r.sc.Steps {
+		p.Timeout = max(p.Timeout, time.Duration(r.sc.Steps[i].Timeout))
+	}
+	c, err := conn.Dial(ctx, &p, conn.Options{
 		Handler: func(v ocpp.Version) ocpp.Dispatcher { return &dispatcher{r: r, v: v, def: &answer.Default{Version: v}} },
 		Debug:   r.cfg.Debug, Stderr: r.errw,
 	})

@@ -25,9 +25,10 @@ workaround of its own any more.
 ## Findings in the reference implementations
 
 From the interoperability run against [ocpp-interop](https://github.com/otfabric/ocpp-interop)
-v0.4.1, run with go-ocpp v0.1.2 (`scripts/interop.sh`, results in
-[`reports/interop-v0.4.1.tsv`](../reports/interop-v0.4.1.tsv)): every fixture sample in both
-directions, five references. **1154 exchanges passed, 29 were answered with a CALLERROR,
+v0.5.3, run with go-ocpp v0.2.0 (`scripts/interop.sh`, results in
+[`reports/interop-v0.5.3.tsv`](../reports/interop-v0.5.3.tsv); the same counts as with v0.4.1
+and go-ocpp v0.1.2, [`reports/interop-v0.4.1.tsv`](../reports/interop-v0.4.1.tsv)): every
+fixture sample in both directions, five references. **1154 exchanges passed, 29 were answered with a CALLERROR,
 32 were skipped and 3 failed.**
 
 - The 3 failures are U1: responses of ocpp-go that do not conform to the OCA schema, which

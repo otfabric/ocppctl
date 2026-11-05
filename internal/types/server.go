@@ -3,6 +3,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -92,7 +93,7 @@ func (e *ServerEvent) MarshalTextOutput() (string, error) {
 	_, _ = fmt.Fprintf(&b, "%s  %-13s", e.Time, e.Event)
 	for _, s := range []string{e.Identity, e.Version, e.Remote, e.Action} {
 		if s != "" {
-			_, _ = fmt.Fprintf(&b, "  %s", s)
+			_, _ = fmt.Fprintf(&b, "  %s", safe(s))
 		}
 	}
 	if d := e.detail(); d != "" {
@@ -108,16 +109,28 @@ func (e *ServerEvent) TableHeaders() []string {
 
 // TableRows implements format.TableMarshaler.
 func (e *ServerEvent) TableRows() [][]string {
-	return [][]string{{e.Time, e.Event, orDash(e.Identity), orDash(e.Version), orDash(e.Remote), orDash(e.Action), orDash(e.detail())}}
+	return [][]string{{e.Time, e.Event, orDash(safe(e.Identity)), orDash(e.Version), orDash(safe(e.Remote)), orDash(safe(e.Action)), orDash(e.detail())}}
 }
 
+// compactJSON returns raw on one line, as it was sent otherwise: json.Compact keeps the
+// numbers (a round trip through any would turn them into float64) and the key order. What
+// is not JSON is quoted.
 func compactJSON(raw json.RawMessage) string {
-	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
-		return string(raw)
+	var b bytes.Buffer
+	if err := json.Compact(&b, raw); err != nil {
+		return strconv.Quote(string(raw))
 	}
-	b, _ := json.Marshal(v)
-	return string(b)
+	return b.String()
+}
+
+// safe returns s as it is when it is a plain word, quoted otherwise. A station chooses its
+// identity and the action names it sends: with a newline or a terminal escape in them,
+// they would forge or hide lines of the text and table output.
+func safe(s string) string {
+	if q := strconv.Quote(s); q[1:len(q)-1] != s || strings.ContainsRune(s, ' ') {
+		return q
+	}
+	return s
 }
 
 // StationInfo is one station connected to a running `server start`.
@@ -145,7 +158,7 @@ func (r StationsResult) MarshalTextOutput() (string, error) {
 	}
 	var b strings.Builder
 	for _, s := range r.Stations {
-		_, _ = fmt.Fprintf(&b, "%-20s OCPP %-6s %-22s connected %s  tls=%t compression=%t\n", s.Identity, s.Version, s.Remote,
+		_, _ = fmt.Fprintf(&b, "%-20s OCPP %-6s %-22s connected %s  tls=%t compression=%t\n", safe(s.Identity), s.Version, s.Remote,
 			time.Time(s.ConnectedAt).UTC().Format(TimeLayout), s.TLS, s.Compression)
 	}
 	return b.String(), nil
@@ -160,7 +173,7 @@ func (r StationsResult) TableHeaders() []string {
 func (r StationsResult) TableRows() [][]string {
 	rows := make([][]string, 0, len(r.Stations))
 	for _, s := range r.Stations {
-		rows = append(rows, []string{s.Identity, s.Version, s.Remote, time.Time(s.ConnectedAt).UTC().Format(TimeLayout),
+		rows = append(rows, []string{safe(s.Identity), s.Version, s.Remote, time.Time(s.ConnectedAt).UTC().Format(TimeLayout),
 			strconv.FormatBool(s.TLS), strconv.FormatBool(s.Compression)})
 	}
 	return rows

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -389,7 +390,7 @@ func (s *Station) boot(ctx context.Context, reason string) bool {
 		if err == nil {
 			_ = json.Unmarshal(resp, &r)
 			if r.Interval > 0 {
-				wait = time.Duration(r.Interval) * time.Second
+				wait = seconds(r.Interval)
 			}
 			if s.accepted(resp) {
 				return true
@@ -398,11 +399,29 @@ func (s *Station) boot(ctx context.Context, reason string) bool {
 		} else if errors.Is(err, ocpp.ErrNotConnected) || errors.Is(err, ocpp.ErrConnectionLost) || errors.Is(err, ocpp.ErrClosed) {
 			return false
 		}
+		if s.waitBoot(ctx, wait) {
+			return true
+		}
+		if ctx.Err() != nil {
+			return false
+		}
+	}
+}
+
+// waitBoot waits until the BootNotification is to be sent again, running the tasks the
+// CSMS asks for meanwhile (a TriggerMessage while Pending). It reports true when one of
+// them booted the station (a triggered BootNotification that was Accepted). A task does
+// not cut the wait short: the CSMS's interval holds.
+func (s *Station) waitBoot(ctx context.Context, wait time.Duration) bool {
+	timer := time.NewTimer(wait)
+	defer timer.Stop()
+	for {
 		select {
 		case <-ctx.Done():
 			return false
-		case <-time.After(wait):
-		case t := <-s.tasks: // a TriggerMessage(BootNotification) while Pending
+		case <-timer.C:
+			return false
+		case t := <-s.tasks:
 			t(ctx)
 			s.mu.Lock()
 			booted := s.stats.Booted
@@ -427,7 +446,7 @@ func (s *Station) accepted(resp json.RawMessage) bool {
 	s.mu.Lock()
 	s.stats.Booted = true
 	if s.model.Heartbeat == 0 && r.Interval > 0 {
-		s.heartbeat = time.Duration(r.Interval) * time.Second
+		s.heartbeat = seconds(r.Interval)
 		// The configuration and the device model report the interval in use.
 		sec := strconv.Itoa(r.Interval)
 		if c, ok := s.conf["HeartbeatInterval"]; ok {
@@ -795,4 +814,17 @@ func newTransactionID() string {
 	_, _ = rand.Read(b)
 	h := hex.EncodeToString(b)
 	return h[0:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:32]
+}
+
+// maxInterval is the longest interval in whole seconds a time.Duration holds (292 years).
+const maxInterval = time.Duration(math.MaxInt64/int64(time.Second)) * time.Second
+
+// seconds converts an interval in seconds, as the CSMS gives it, to a duration; one too
+// long for a time.Duration is the longest one, not one that wrapped around (an interval
+// of 18446744074 s would otherwise be a heartbeat every 290 ms).
+func seconds(n int) time.Duration {
+	if time.Duration(n) > maxInterval/time.Second {
+		return maxInterval
+	}
+	return time.Duration(n) * time.Second
 }

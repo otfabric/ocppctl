@@ -8,7 +8,6 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/otfabric/go-ocpp"
 
@@ -428,7 +427,7 @@ func (s *Station) setHeartbeatSeconds(v string) {
 	if err != nil || n <= 0 {
 		return
 	}
-	s.setHeartbeat(time.Duration(n) * time.Second)
+	s.setHeartbeat(seconds(n))
 }
 
 // known reports whether action exists in v.

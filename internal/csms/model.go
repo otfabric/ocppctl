@@ -325,8 +325,6 @@ func contains(list []string, s string) bool {
 	return slices.Contains(list, s)
 }
 
-func ptr[T any](v T) *T { return new(v) }
-
 // DefaultYAML is the commented model `server generate-config` writes, and the model of a
 // server started without --config.
 const DefaultYAML = `# ocppctl CSMS model: how "ocppctl server start --config <file>" answers its stations.

@@ -116,6 +116,9 @@ type FrameDecodeConfig struct {
 	Frame        string `flag:"-"`
 }
 
+// stdinSlack is the whitespace `frame decode -` reads around a frame of the largest size.
+const stdinSlack = 4 << 10
+
 // FrameDecode decodes an OCPP-J frame ("-" reads it from stdin).
 func FrameDecode(cfg *FrameDecodeConfig, stdin io.Reader) (*types.FrameResult, error) {
 	v, err := version(cfg.Version)
@@ -124,8 +127,15 @@ func FrameDecode(cfg *FrameDecodeConfig, stdin io.Reader) (*types.FrameResult, e
 	}
 	data := []byte(cfg.Frame)
 	if cfg.Frame == "-" {
-		if data, err = io.ReadAll(stdin); err != nil {
+		// A frame is at most ocppj.DefaultMaxFrameSize; whitespace around it is allowed.
+		// Reading stops past that, so that an endless stdin does not fill memory.
+		limit := int64(ocppj.DefaultMaxFrameSize + stdinSlack)
+		if data, err = io.ReadAll(io.LimitReader(stdin, limit+1)); err != nil {
 			return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, err.Error(), err)
+		}
+		if int64(len(data)) > limit {
+			return nil, errs.InvalidInput(errs.CodeProtocolViolation,
+				fmt.Sprintf("the frame on stdin is larger than the largest OCPP-J frame (%d bytes)", ocppj.DefaultMaxFrameSize), nil)
 		}
 	}
 	data = []byte(strings.TrimSpace(string(data)))

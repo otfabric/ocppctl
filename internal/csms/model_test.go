@@ -171,7 +171,7 @@ func TestEventRendering(t *testing.T) {
 	ev.Address, ev.Versions, ev.ControlSocket, ev.TLS, ev.Compression = "a", []string{"1.6"}, "s", new(true), new(false)
 	ev.Request = json.RawMessage(`not json`)
 	text, _ := ev.MarshalTextOutput()
-	for _, want := range []string{"call_result", "CS1", "Reset", `response={"status":"Accepted"}`, "duration_ms=5", "tls=true", "request=not json"} {
+	for _, want := range []string{"call_result", "CS1", "Reset", `response={"status":"Accepted"}`, "duration_ms=5", "tls=true", `request="not json"`} {
 		if !strings.Contains(text, want) {
 			t.Errorf("text lacks %q: %s", want, text)
 		}

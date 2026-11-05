@@ -54,15 +54,18 @@ func ExpandURL(u string) ([]string, error) {
 		return nil, errs.InvalidInput(errs.CodeInvalidURL, "--url may hold one {N..M} identity range", nil)
 	}
 	l := locs[0]
-	from, _ := strconv.Atoi(u[l[2]:l[3]])
-	to, _ := strconv.Atoi(u[l[4]:l[5]])
-	width := l[3] - l[2]
-	if to < from || to-from+1 > MaxStations {
-		return nil, errs.InvalidInput(errs.CodeInvalidURL, fmt.Sprintf("invalid identity range {%d..%d}: up to %d stations, ascending", from, to, MaxStations), nil)
+	// Both are digits only: an error is a number too large for an int. to-from cannot
+	// overflow then, and the loop counts stations, so that no number passes the largest int.
+	from, ferr := strconv.Atoi(u[l[2]:l[3]])
+	to, terr := strconv.Atoi(u[l[4]:l[5]])
+	if ferr != nil || terr != nil || to < from || to-from >= MaxStations {
+		return nil, errs.InvalidInput(errs.CodeInvalidURL, fmt.Sprintf("invalid identity range {%s..%s}: up to %d stations, ascending",
+			u[l[2]:l[3]], u[l[4]:l[5]], MaxStations), nil)
 	}
+	width := l[3] - l[2]
 	out := make([]string, 0, to-from+1)
-	for n := from; n <= to; n++ {
-		out = append(out, u[:l[0]]+fmt.Sprintf("%0*d", width, n)+u[l[1]:])
+	for i := range to - from + 1 {
+		out = append(out, u[:l[0]]+fmt.Sprintf("%0*d", width, from+i)+u[l[1]:])
 	}
 	return out, nil
 }

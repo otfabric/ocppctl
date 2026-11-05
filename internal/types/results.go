@@ -5,12 +5,15 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/otfabric/ocppctl/internal/format"
 )
 
 // Received is a CALL or SEND the peer sent while ocppctl did something else.
@@ -40,7 +43,7 @@ func (r CallResult) MarshalTextOutput() (string, error) {
 	_, _ = fmt.Fprintf(&b, "%s answered (OCPP %s, %d ms)\n", r.Action, r.Version, r.DurationMS)
 	b.WriteString(indentJSON(r.Response))
 	for _, rc := range r.Received {
-		_, _ = fmt.Fprintf(&b, "\nreceived %s from the peer, answered %s\n", rc.Action, answered(rc))
+		_, _ = fmt.Fprintf(&b, "\nreceived %s from the peer, answered %s\n", safe(rc.Action), answered(rc))
 	}
 	return b.String(), nil
 }
@@ -118,11 +121,11 @@ func (r ProbeResult) MarshalTextOutput() (string, error) {
 		if a.OK {
 			_, _ = fmt.Fprintf(&b, "negotiated      %s\n", a.Negotiated)
 		} else if a.Error != nil {
-			_, _ = fmt.Fprintf(&b, "refused         %s\n", a.Error.Message)
+			_, _ = fmt.Fprintf(&b, "refused         %s\n", format.EscapeLine(a.Error.Message))
 		}
 		if a.TLS != nil {
 			_, _ = fmt.Fprintf(&b, "tls             %s, %s, certificate %s (issuer %s, valid until %s)%s\n", a.TLS.Version, a.TLS.CipherSuite,
-				a.TLS.Subject, a.TLS.Issuer, a.TLS.NotAfter.Format("2006-01-02"), map[bool]string{true: ", client certificate sent"}[a.TLS.ClientCert])
+				format.EscapeLine(a.TLS.Subject), format.EscapeLine(a.TLS.Issuer), a.TLS.NotAfter.Format("2006-01-02"), map[bool]string{true: ", client certificate sent"}[a.TLS.ClientCert])
 		}
 		_, _ = fmt.Fprintf(&b, "authentication  %s\n", a.Auth)
 		if a.OK {
@@ -275,7 +278,7 @@ func (r FrameResult) MarshalTextOutput() (string, error) {
 		_, _ = fmt.Fprintf(&b, "action      %s\n", r.Action)
 	}
 	if r.ErrorCode != "" {
-		_, _ = fmt.Fprintf(&b, "error code  %s\ndescription %s\n", r.ErrorCode, r.Description)
+		_, _ = fmt.Fprintf(&b, "error code  %s\ndescription %s\n", r.ErrorCode, format.EscapeLine(r.Description))
 	}
 	if r.PayloadValid != nil {
 		v := "valid"
@@ -341,16 +344,17 @@ func answered(r Received) string {
 	if len(r.Response) == 0 {
 		return "nothing (a SEND)"
 	}
-	return string(r.Response)
+	return compactJSON(r.Response)
 }
 
+// indentJSON returns raw indented, as it was sent otherwise: json.Indent keeps the numbers
+// (a round trip through any would turn them into float64) and the key order.
 func indentJSON(raw json.RawMessage) string {
-	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
+	var b bytes.Buffer
+	if err := json.Indent(&b, raw, "", "  "); err != nil {
 		return string(raw) + "\n"
 	}
-	b, _ := json.MarshalIndent(v, "", "  ")
-	return string(b) + "\n"
+	return b.String() + "\n"
 }
 
 // fieldRows flattens the top level of a JSON object into FIELD/VALUE rows.
@@ -434,7 +438,7 @@ func (e StationEvent) MarshalTextOutput() (string, error) {
 func (e StationEvent) detail() string {
 	var parts []string
 	if e.Action != "" {
-		parts = append(parts, e.Action)
+		parts = append(parts, safe(e.Action))
 	}
 	if e.Transaction != "" {
 		parts = append(parts, "transaction "+e.Transaction)
@@ -447,12 +451,12 @@ func (e StationEvent) detail() string {
 	}
 	switch {
 	case len(e.Response) > 0:
-		parts = append(parts, string(e.Response))
+		parts = append(parts, compactJSON(e.Response))
 	case len(e.Request) > 0:
-		parts = append(parts, string(e.Request))
+		parts = append(parts, compactJSON(e.Request))
 	}
 	if e.Message != "" {
-		parts = append(parts, e.Message)
+		parts = append(parts, format.EscapeLine(e.Message))
 	}
 	return strings.Join(parts, " ")
 }
@@ -508,12 +512,12 @@ func (r ScriptResult) MarshalTextOutput() (string, error) {
 		}
 		_, _ = fmt.Fprintf(&b, "%-7s %2d  %s (%d ms)", strings.ToUpper(s.Result), s.Index, label, s.DurationMS)
 		if s.Message != "" {
-			_, _ = fmt.Fprintf(&b, ": %s", s.Message)
+			_, _ = fmt.Fprintf(&b, ": %s", format.EscapeLine(s.Message))
 		}
 		b.WriteString("\n")
 	}
 	for _, u := range r.Unexpected {
-		_, _ = fmt.Fprintf(&b, "note       received %s, which no step waited for; answered %s\n", u.Action, answered(u))
+		_, _ = fmt.Fprintf(&b, "note       received %s, which no step waited for; answered %s\n", safe(u.Action), answered(u))
 	}
 	_, _ = fmt.Fprintf(&b, "%d passed, %d failed, %d skipped in %d ms\n", r.Passed, r.Failed, r.Skipped, r.DurationMS)
 	return b.String(), nil

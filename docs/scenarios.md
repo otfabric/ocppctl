@@ -90,7 +90,7 @@ Every step may also have a `name`, shown in the result.
 | `expect_error` | `call` only: the CALLERROR code the CSMS must answer with (such as `NotSupported`), or `any`. A CALLRESULT then fails the step. Excludes `expect` |
 | `answer` | `wait_for` only: the response to send: an object, `"@file"`, or `accept` (`{"status":"Accepted"}`), `reject` (`{"status":"Rejected"}`), `not-supported` (the CALLERROR `NotSupported`), `not-implemented` (the CALLERROR `NotImplemented`). Default: `{"status":"Accepted"}` when the action's response schema accepts it, else `{}`, else the CALLERROR `NotSupported` |
 | `save` | `name: path` pairs: store a field of the response (`call`) or request (`wait_for`) as a variable. A path that is absent fails the step |
-| `timeout` | how long a `call` waits for its response, or a `wait_for` for its CALL (default `--timeout`) |
+| `timeout` | how long a `call` waits for its response, or a `wait_for` for its CALL (default `--timeout`); it may be longer than `--timeout` |
 
 Durations are Go durations: `500ms`, `10s`, `2m`.
 
@@ -120,7 +120,7 @@ expect:
 | `{present: true}` / `{present: false}` | the field is there, or is not |
 | `{one_of: [a, b, …]}` | the field equals one of the values |
 
-Every condition except `present: false` fails when the field is absent. All failures of a step are reported, sorted by path:
+A condition has exactly one operator, with a value of its shape (a non-empty `regex` string, a `present` boolean, a `one_of` list); anything else is a scenario error, not a condition that always holds. Every condition except `present: false` fails when the field is absent. All failures of a step are reported, sorted by path:
 
 ```
 FAIL     1  call BootNotification (0 ms): interval is 300, want one of [60,120]
@@ -147,7 +147,7 @@ The built-in names take precedence over `--var` and `save` of the same name. A v
 
 ## Payload files
 
-A `payload` or `answer` can be a JSON file: `"@file"`. The path is relative to the directory of the scenario file (or absolute). **Quote it:** `@` cannot start a plain YAML scalar, so `payload: @meter.json` is a YAML syntax error; write `payload: "@meter.json"`.
+A `payload` or `answer` can be a JSON file: `"@file"`. The path is relative to the directory of the scenario file (or absolute). **Quote it:** `@` cannot start a plain YAML scalar, so `payload: @meter.json` is a YAML syntax error; write `payload: "@meter.json"`. A scenario reads the files it names, wherever they are, and sends their JSON to the CSMS: review a scenario from someone else as you would a script.
 
 ```yaml
   - call: MeterValues

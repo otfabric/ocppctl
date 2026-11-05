@@ -117,6 +117,9 @@ func Wrap(err error, action string, stateChanging bool) error {
 		return errs.New(errs.KindTimeout, errs.CodeRequestTimeout, fmt.Sprintf("%s: no response in time", what), err)
 	case errors.Is(err, ocpp.ErrConnectionLost), errors.Is(err, ocpp.ErrNotConnected), errors.Is(err, ocpp.ErrClosed):
 		return errs.New(errs.KindTransport, errs.CodeConnectionLost, fmt.Sprintf("connection error: %v", err), err)
+	case errors.Is(err, ocpp.ErrBusy):
+		return errs.New(errs.KindTransport, errs.CodeStationBusy,
+			fmt.Sprintf("%s: too many CALLs waiting to be sent; this one was not sent, and trying again later is safe", what), err)
 	case errors.Is(err, ocpp.ErrUnsupportedVersion):
 		return errs.New(errs.KindInvalidInput, errs.CodeUnsupportedVersion, err.Error(), err)
 	case errors.Is(err, ocpp.ErrWrongDirection):

@@ -52,6 +52,7 @@ func TestWrapClassifies(t *testing.T) {
 		"timeout, no action": {err: ocpp.ErrTimeout, state: true, kind: errs.KindTimeout, code: errs.CodeRequestTimeout},
 		"lost":               {err: ocpp.ErrConnectionLost, kind: errs.KindTransport, code: errs.CodeConnectionLost},
 		"not connected":      {err: ocpp.ErrNotConnected, kind: errs.KindTransport, code: errs.CodeConnectionLost},
+		"busy":               {err: fmt.Errorf("Reset: %w", ocpp.ErrBusy), kind: errs.KindTransport, code: errs.CodeStationBusy},
 		"closed":             {err: ocpp.ErrClosed, kind: errs.KindTransport, code: errs.CodeConnectionLost},
 		"version":            {err: ocpp.ErrUnsupportedVersion, kind: errs.KindInvalidInput, code: errs.CodeUnsupportedVersion},
 		"direction":          {err: ocpp.ErrWrongDirection, kind: errs.KindInvalidInput, code: errs.CodeUnknownAction},
