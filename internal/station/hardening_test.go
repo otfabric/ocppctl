@@ -329,3 +329,18 @@ func TestModelEncoding(t *testing.T) {
 		t.Fatal("an empty model validated")
 	}
 }
+
+// When the interval of a Pending boot runs out, the station sends BootNotification again
+// by itself.
+func TestBootPendingRetriesAfterInterval(t *testing.T) {
+	csms := testcsms.Start(t)
+	rec := csms.Recorder(ocpp.V201)
+	rec.Answer("BootNotification", `{"status":"Pending","currentTime":"2026-01-01T00:00:00Z","interval":1}`)
+	_, ev, _ := start(t, Demo(), parsed(t, csms.URL+"CSPI", ocpp.V201))
+	ev.wait(t, "boot_pending", event("boot_pending"))
+	rec.Answer("BootNotification", `{"status":"Accepted","currentTime":"2026-01-01T00:00:00Z","interval":300}`)
+	ev.wait(t, "booted", event("booted"))
+	if n := len(rec.Received("BootNotification")); n != 2 {
+		t.Fatalf("%d BootNotifications, want 2", n)
+	}
+}
