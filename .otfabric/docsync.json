@@ -1,0 +1,18 @@
+{
+  "clis": [
+    {
+      "name": "ocppctl",
+      "manifest": "./cmd",
+      "exit_codes": "internal/errs",
+      "json_types": "internal/types"
+    }
+  ],
+  "ignore": [
+    {"rule": "DS-REF", "subject": "client.HandshakeError", "reason": "go-ocpp/client.HandshakeError (exists, used in internal/ocpperr/ocpperr.go); docsync resolves client to the local cmd/client package"},
+    {"rule": "DS-JSON", "subject": "offered", "reason": "documented as attempts[].offered in docs/json-output.md; docsync does not read the parent[].field form"},
+    {"rule": "DS-JSON", "subject": "negotiated", "reason": "documented as attempts[].negotiated in docs/json-output.md; docsync does not read the parent[].field form"},
+    {"rule": "DS-JSON", "subject": "ok", "reason": "documented as attempts[].ok in docs/json-output.md; docsync does not read the parent[].field form"},
+    {"rule": "DS-JSON", "subject": "http_status", "reason": "documented as attempts[].http_status in docs/json-output.md; docsync does not read the parent[].field form"},
+    {"rule": "DS-JSON", "subject": "authentication", "reason": "documented as attempts[].authentication in docs/json-output.md; docsync does not read the parent[].field form"}
+  ]
+}
