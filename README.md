@@ -860,6 +860,8 @@ ocppctl validate BootNotification --ocpp-version 1.6 --response --payload @boot-
 # Build a frame
 ocppctl frame encode --type call --id 1 --action Heartbeat --ocpp-version 1.6
 ocppctl frame encode --type callerror --id 1 --error-code NotImplemented --description "Unknown action" --ocpp-version 2.0.1
+ocppctl frame encode --type callerror --id 1 --error-code FormatViolation --description "Bad payload" \
+  --details '{"field":"idToken"}' --ocpp-version 2.0.1
 ```
 
 ```console

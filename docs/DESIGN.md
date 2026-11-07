@@ -359,9 +359,9 @@ As the siblings:
 | 7 | partial | `client script` with failed steps; `client run` with some stations failing |
 | 10 | output or internal | |
 
-The mapping follows go-ocpp's sentinels (`ErrConnectFailed`,
-`HandshakeError`, `ErrTimeout`, `CallError`, `ValidationError`,
-`ErrConnectionLost`), so ocppctl adds no protocol judgement of its own. The
+The mapping follows go-ocpp's sentinels (`ocpp.ErrConnectFailed`,
+`client.HandshakeError`, `ocpp.ErrTimeout`, `ocpp.CallError`,
+`ocpp.ValidationError`, `ocpp.ErrConnectionLost`), so ocppctl adds no protocol judgement of its own. The
 reference is [exitcodes.md](exitcodes.md).
 
 ## Security
