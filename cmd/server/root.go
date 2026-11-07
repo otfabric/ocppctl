@@ -16,6 +16,7 @@ import (
 	"github.com/otfabric/ocppctl/internal/csms"
 	"github.com/otfabric/ocppctl/internal/errs"
 	"github.com/otfabric/ocppctl/internal/format"
+	"github.com/otfabric/ocppctl/internal/ocppx"
 	"github.com/otfabric/ocppctl/internal/runner"
 	"github.com/otfabric/ocppctl/internal/types"
 )
@@ -177,7 +178,8 @@ response that fails validation.`,
   OCPPCTL_CONTROL_SOCKET=/srv/csms/ocppctl.sock ocppctl server call TriggerMessage --station CS001 --yes \
     --payload '{"requestedMessage":"StatusNotification"}' --format json
 `,
-		Args: cobra.ExactArgs(1),
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: cli.CompleteActions(func(a ocppx.Action) bool { return a.Kind == "call" && a.From != ocppx.FromStation }),
 	}
 	cfg := csms.NewCallConfig()
 	runner.RegisterCommandCfg(cmd, &cfg, controlCompletion, func(c *cobra.Command) { _ = c.MarkFlagFilename("payload", "json") })

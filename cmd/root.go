@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"os/signal"
-	"runtime"
 	"strings"
 	"syscall"
 
@@ -17,6 +16,9 @@ import (
 
 	"github.com/otfabric/ocppctl/cmd/client"
 	"github.com/otfabric/ocppctl/cmd/server"
+	"github.com/otfabric/ocppctl/internal/buildinfo"
+	clihelp "github.com/otfabric/ocppctl/internal/cli"
+	"github.com/otfabric/ocppctl/internal/config"
 	"github.com/otfabric/ocppctl/internal/errs"
 	"github.com/otfabric/ocppctl/internal/runner"
 )
@@ -64,34 +66,38 @@ stderr. Exit codes are stable: see docs/exitcodes.md.`,
 		newCompletionCmd(),
 		newVersionCmd(),
 	)
+	// Every other flag and argument completes no file names, except these files.
+	clihelp.CompleteRest(root, map[string][]string{
+		"config": {"yaml", "yml", "json"}, "output": nil, "password-file": nil, "passwords-file": nil, "control-socket": nil,
+		"tls-ca": pemFiles, "tls-cert": pemFiles, "tls-key": pemFiles, "tls-client-ca": pemFiles,
+	}, map[string][]string{"client script": {"yaml", "yml"}})
 	return root
 }
 
+// pemFiles are the extensions of the certificate and key files the TLS flags take.
+var pemFiles = []string{"pem", "crt", "cer", "key"}
+
 func newVersionCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the version of ocppctl",
-		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, _ []string) {
-			out := cmd.OutOrStdout()
-			ver := strings.TrimSpace(buildMeta.version)
-			if ver == "" {
-				ver = "(unknown)"
+		Long: `Print the version of ocppctl on one line: the version, the git tag and commit it
+was built from, the build date, the Go version and the platform. --json (or
+OCPPCTL_FORMAT=json) prints the same as one JSON object.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			info := buildinfo.Resolve("ocppctl", buildMeta.version, buildMeta.tag, buildMeta.commit, buildMeta.buildDate)
+			line := info.String()
+			asJSON, _ := cmd.Flags().GetBool("json")
+			if asJSON || strings.EqualFold(strings.TrimSpace(config.Getenv("OCPPCTL_FORMAT")), "json") {
+				line = info.JSON()
 			}
-			_, _ = fmt.Fprintf(out, "ocppctl version: %s\n", ver)
-			if s := strings.TrimSpace(buildMeta.tag); s != "" {
-				_, _ = fmt.Fprintf(out, "tag:         %s\n", s)
-			}
-			if s := strings.TrimSpace(buildMeta.commit); s != "" {
-				_, _ = fmt.Fprintf(out, "commit:      %s\n", s)
-			}
-			if s := strings.TrimSpace(buildMeta.buildDate); s != "" {
-				_, _ = fmt.Fprintf(out, "build date:  %s\n", s)
-			}
-			_, _ = fmt.Fprintf(out, "go version:  %s\n", runtime.Version())
-			_, _ = fmt.Fprintf(out, "platform:    %s/%s\n", runtime.GOOS, runtime.GOARCH)
+			_, err := fmt.Fprintln(cmd.OutOrStdout(), line)
+			return err
 		},
 	}
+	cmd.Flags().Bool("json", false, "Print the version as one JSON object")
+	return cmd
 }
 
 // Execute runs the root command and returns the process exit code (main should call os.Exit).

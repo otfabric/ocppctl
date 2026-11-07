@@ -30,6 +30,8 @@ From source (Go 1.26+): `go install github.com/otfabric/ocppctl@latest`
 
 ### Shell completion
 
+Flags with a fixed set of values complete to those values, `<Action>` and `--action` to the actions of the OCPP version, and file flags to files of their type.
+
 ```bash
 # bash (needs the bash-completion package)
 mkdir -p ~/.local/share/bash-completion/completions
@@ -208,7 +210,7 @@ ocppctl
 ├── cert
 │   └── hash                CertificateHashData of a certificate
 ├── completion              shell completion script (bash|zsh|fish|powershell)
-└── version                 print version
+└── version                 print the version line (--json: one JSON line)
 ```
 
 ---
@@ -259,7 +261,7 @@ ocppctl actions
 ocppctl validate <Action>
 ocppctl frame decode | encode
 ocppctl cert hash
-ocppctl version
+ocppctl version [--json]
 ```
 
 Every command has `--help`, with a description and examples. Action names are case-sensitive, as in OCPP (`BootNotification`); a near miss is suggested.

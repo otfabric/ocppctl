@@ -22,9 +22,11 @@ BINARY         = $(BIN_DIR)/$(APP_NAME)
 ARCHS	  = linux/amd64 linux/arm64 linux/arm/v7 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
 
 # Override on the command line or in CI (matches reusable release workflow ldflags).
-VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "0.0.0-dev")
+# TAG and VERSION only when HEAD is exactly on a tag; any other build reports "dev".
+# VERSION has no leading v (the tag has it), as the release workflow passes it.
 TAG        ?= $(shell git describe --tags --exact-match 2>/dev/null || echo "")
-COMMIT     ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+VERSION    ?= $(if $(TAG),$(patsubst v%,%,$(TAG)),dev)
+COMMIT     ?= $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
 LDFLAGS := -ldflags "-s -w -X 'main.version=$(VERSION)' -X 'main.tag=$(TAG)' -X 'main.commit=$(COMMIT)' -X 'main.buildDate=$(BUILD_DATE)'"

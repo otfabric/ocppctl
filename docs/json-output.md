@@ -132,6 +132,10 @@ An invalid payload is written as a result and exits 3.
 | `hash_algorithm`, `issuer_name_hash`, `issuer_key_hash`, `serial_number` | CertificateHashData, hex |
 | `ocpp` | the same as OCPP messages carry it: `{"hashAlgorithm", "issuerNameHash", "issuerKeyHash", "serialNumber"}`, ready for a `certificateHashData` field |
 
+### `version --json`
+
+One line, keys in this order, every key always present: `name`, `version` (no leading `v`; `"dev"` for a build without one), `tag` (`""` for a build that is not a release), `commit` (`"unknown"` when not recorded; `-dirty` for a modified tree), `built` (RFC 3339 UTC, or `"unknown"`), `libraries` (the OT Fabric libraries the binary is built on, sorted: `name`, `version`; `[]` when none), `go`, `platform` (`os/arch`). `OCPPCTL_FORMAT=json` gives the same.
+
 ### `server stations`
 
 `target` (the control socket) and `stations`: `identity`, `version`, `remote`, `connected_at`, `tls`, `compression`, `session_id`.

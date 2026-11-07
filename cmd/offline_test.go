@@ -149,8 +149,6 @@ func TestCertHash(t *testing.T) {
 }
 
 func TestRootCommands(t *testing.T) {
-	SetBuildMeta("v0.1.0", "v0.1.0", "abc", "2026-10-18")
-	run(t, "version").want(t, errs.ExitOK).has(t, "ocppctl version: v0.1.0", "commit:      abc", "build date:", "go version:")
 	for _, sh := range []string{"bash", "zsh", "fish", "powershell"} {
 		if r := run(t, "completion", sh).want(t, errs.ExitOK); len(r.stdout) < 100 {
 			t.Fatalf("%s completion: %q", sh, r.stdout)
@@ -177,5 +175,36 @@ func TestRunCompletes(t *testing.T) {
 	r = run(t, "__complete", "client", "status", "--status", "Av")
 	if !strings.Contains(r.stdout, "Available") {
 		t.Fatalf("completion: %s", r.stdout)
+	}
+	// Positional actions, by sender and kind, and the flags of every command group.
+	for _, c := range []struct {
+		args      []string
+		want, not []string
+	}{
+		{[]string{"client", "call", "--ocpp-version", "1.6", "Bo"}, []string{"BootNotification"}, nil},
+		{[]string{"client", "call", "Re"}, nil, []string{"RemoteStartTransaction", "Reset"}},
+		{[]string{"client", "send", ""}, []string{"NotifyPeriodicEventStream"}, []string{"BootNotification"}},
+		{[]string{"server", "call", "--station", "CS1", "Re"}, []string{"RemoteStartTransaction", "Reset"}, []string{"BootNotification"}},
+		{[]string{"validate", "Heart"}, []string{"Heartbeat"}, nil},
+		{[]string{"validate", "Heartbeat", ""}, nil, []string{"Heartbeat"}},
+		{[]string{"frame", "encode", "--action", "Heart"}, []string{"Heartbeat"}, nil},
+		{[]string{"frame", "encode", "--ocpp-version", "1.6", "--error-code", ""}, []string{"FormationViolation"}, []string{"FormatViolation"}},
+		{[]string{"server", "start", "--ocpp-version", ""}, []string{"1.6", "2.0.1", "2.1"}, nil},
+		{[]string{"cert", "hash", "--hash", ""}, []string{"sha256", "sha512"}, nil},
+		{[]string{"client", "script", ""}, []string{"yaml", "yml", ":8"}, nil},
+		{[]string{"server", "start", "--config", ""}, []string{"yaml", "json", ":8"}, nil},
+		{[]string{"client", "boot", "--url", ""}, []string{":4"}, nil},
+	} {
+		r := run(t, append([]string{"__completeNoDesc"}, c.args...)...)
+		for _, w := range c.want {
+			if !strings.Contains("\n"+r.stdout, "\n"+w+"\n") {
+				t.Errorf("completion of %v lacks %q:\n%s", c.args, w, r.stdout)
+			}
+		}
+		for _, n := range c.not {
+			if strings.Contains("\n"+r.stdout, "\n"+n+"\n") {
+				t.Errorf("completion of %v offers %q:\n%s", c.args, n, r.stdout)
+			}
+		}
 	}
 }

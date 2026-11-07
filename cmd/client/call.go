@@ -7,7 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/otfabric/ocppctl/internal/cli"
 	"github.com/otfabric/ocppctl/internal/clientops"
+	"github.com/otfabric/ocppctl/internal/ocppx"
 )
 
 func newCallCmd() *cobra.Command {
@@ -43,7 +45,8 @@ may have acted on it, so do not blindly resend it.`,
   # A deliberately invalid message
   ocppctl client call Heartbeat --url ws://localhost:9000/CS001 --insecure-transport --raw --payload '{"bogus":1}'
 `,
-		Args: cobra.ExactArgs(1),
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: cli.CompleteActions(func(a ocppx.Action) bool { return a.Kind == "call" && a.From != ocppx.FromCSMS }),
 	}
 	cfg := clientops.CallConfig{Common: clientops.NewCommon()}
 	wire(cmd, &cfg)
@@ -67,7 +70,8 @@ result says only that it was sent. The CSMS must choose OCPP 2.1.`,
   ocppctl client send NotifyPeriodicEventStream --url wss://csms.example.com/ocpp/CS001 --ocpp-version 2.1 \
     --payload '{"id":1,"pending":0,"basetime":"2026-01-01T00:00:00Z","data":[{"t":0,"v":"230"}]}'
 `,
-		Args: cobra.ExactArgs(1),
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: cli.CompleteActions(func(a ocppx.Action) bool { return a.Kind == "send" && a.From != ocppx.FromCSMS }),
 	}
 	cfg := clientops.SendConfig{Common: clientops.NewCommon()}
 	cfg.Versions = []string{"2.1"}

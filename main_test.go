@@ -37,7 +37,7 @@ func TestMainPassesBuildMetaAndExitCode(t *testing.T) {
 	defer func() { version = old }()
 	version = "v9.8.7-test"
 	code, out := runMain(t, "version")
-	if code != 0 || !strings.Contains(out, "v9.8.7-test") {
+	if code != 0 || !strings.HasPrefix(out, "ocppctl 9.8.7-test (") {
 		t.Fatalf("version: exit %d, output %q", code, out)
 	}
 	if code, _ := runMain(t, "no-such-command"); code == 0 {
