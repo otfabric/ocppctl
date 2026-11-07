@@ -10,9 +10,23 @@
 
 It is built for CSMS development and QA, station and firmware development, commissioning and troubleshooting, and hardware-free test setups. Output can be plain text, a table or JSON with stable exit codes, so it works in scripts and CI. It is written in Go on top of [go-ocpp](https://github.com/otfabric/go-ocpp) v0.1.3: every message on the wire is go-ocpp's, validated against the JSON schemas of the Open Charge Alliance.
 
-**Quick links:** [Quick start](#quick-start) · [Features](#features) · [Installation](#installation) · [OCPP in two minutes](#ocpp-in-two-minutes) · [Connecting](#connecting-to-a-csms) · [Runbook](#runbook) · [Simulated station](#simulate-a-station) · [Scenarios](#scenarios) · [CSMS](#run-a-csms) · [FAQ](#faq)
+**Quick links:** [Quick start](#quick-start) · [Features](#features) · [Install](#install) · [OCPP in two minutes](#ocpp-in-two-minutes) · [Connecting](#connecting-to-a-csms) · [Runbook](#runbook) · [Simulated station](#simulate-a-station) · [Scenarios](#scenarios) · [CSMS](#run-a-csms) · [FAQ](#faq)
 
 > **Responsible use:** OCPP controls real chargers and real money. Only use ocppctl on systems you own or are authorized to test. `server call` resets stations, starts and stops charging sessions and changes their configuration; `client call` and the simulated stations start and stop transactions a CSMS may bill; a simulated station under the identity of a real one can push that station off its CSMS. Use test identities and test tokens, and know what a message does before you send it.
+
+## Install
+
+```bash
+curl -fsSL https://get.otfabric.io/ocppctl | sh
+```
+
+```powershell
+irm https://get.otfabric.io/ocppctl.ps1 | iex
+```
+
+Linux (amd64, arm64, armv7), macOS (Intel, Apple silicon) and Windows (amd64, arm64). The installer verifies the release's SHA-256 checksum, installs per user without `sudo` (`~/.local/bin`, Windows `%LOCALAPPDATA%\OTFabric\bin`), and upgrades in place when run again. Pin a version with `OTF_VERSION=x.y.z`; for CI, containers and device images use `OTF_UNMANAGED_INSTALL=<dir>`; all options: [otfabric/install](https://github.com/otfabric/install#options). For offline machines, the archives and checksums are on [Releases](https://github.com/otfabric/ocppctl/releases).
+
+From source (Go 1.26+): `go install github.com/otfabric/ocppctl@latest`
 
 ---
 
@@ -27,13 +41,13 @@ It is built for CSMS development and QA, station and firmware development, commi
 - **Offline** — `validate` a payload, `frame decode` a line from a log, list the `actions` of a version, compute the `cert hash` that DeleteCertificate needs.
 - **Strict by default** — every message is validated against the OCA schemas, in both directions; TLS verification cannot be turned off; passwords are never taken from the command line.
 - **Script-friendly** — `--format text|json|table`, JSON Lines for streams, a single JSON error object on failure, stable exit codes and `OCPPCTL_*` environment variables.
-- **Pre-built binaries** — Linux, macOS and Windows (x86-64 and ARM) from [GitHub Releases](https://github.com/otfabric/ocppctl/releases), with SHA-256 checksums; no runtime to install.
+- **One-line install** — Linux, macOS and Windows (x86-64 and ARM), see [Install](#install); a single binary, no runtime to install.
 
 ---
 
 ## Quick start
 
-Download a binary from [GitHub Releases](https://github.com/otfabric/ocppctl/releases) (see [Installation](#installation) for copy-paste commands for Linux, macOS and Windows, or build from source). No CSMS at hand? Start one in a terminal:
+Install ocppctl (see [Install](#install)). No CSMS at hand? Start one in a terminal:
 
 ```console
 ocppctl server start --insecure-transport --no-auth
@@ -97,12 +111,12 @@ ocppctl is a test and diagnostic tool, not a compliance test: passing a scenario
 
 ## Table of Contents
 
+- [Install](#install)
 - [Why ocppctl?](#why-ocppctl)
 - [Quick start](#quick-start)
 - [How it compares](#how-it-compares)
 - [Use cases](#use-cases)
 - [Features](#features)
-- [Installation](#installation)
 - [OCPP in two minutes](#ocpp-in-two-minutes)
 - [Usage](#usage)
   - [General CLI usage](#general-cli-usage)
@@ -175,146 +189,6 @@ ocppctl
 │   └── hash                CertificateHashData of a certificate
 ├── completion              shell completion script (bash|zsh|fish|powershell)
 └── version                 print version
-```
-
-## Installation
-
-The easiest way to install ocppctl is to download a pre-built binary from the [GitHub Releases page](https://github.com/otfabric/ocppctl/releases). No Go toolchain is required.
-
-| Platform | CPU | Download |
-|---|---|---|
-| Linux | x86-64 | `ocppctl-<version>-linux-amd64.tar.gz` |
-| Linux | 64-bit ARM (Raspberry Pi 4/5 with a 64-bit OS, AWS Graviton) | `ocppctl-<version>-linux-arm64.tar.gz` |
-| Linux | 32-bit ARM (Raspberry Pi with a 32-bit OS) | `ocppctl-<version>-linux-armv7.tar.gz` |
-| macOS | Apple Silicon (M1 and later) | `ocppctl-<version>-darwin-arm64.tar.gz` |
-| macOS | Intel | `ocppctl-<version>-darwin-amd64.tar.gz` |
-| Windows | x86-64 | `ocppctl-<version>-windows-amd64.zip` |
-| Windows | ARM64 | `ocppctl-<version>-windows-arm64.zip` |
-
-Each release also contains `ocppctl-<version>-checksums.txt` (SHA-256) so you can verify your download. The commands below fetch the **latest** release, verify its checksum and install it. Afterwards, check that it works:
-
-```console
-ocppctl version
-```
-
-### Linux
-
-```bash
-# 1. Find the latest version and your CPU architecture
-VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/ocppctl/releases/latest | sed 's|.*/v||')
-case "$(uname -m)" in
-  x86_64)         ARCH=amd64 ;;
-  aarch64|arm64)  ARCH=arm64 ;;
-  armv7l)         ARCH=armv7 ;;
-  *) echo "Unsupported architecture: $(uname -m)" ;;
-esac
-
-# 2. Download the archive and the checksum file
-FILE="ocppctl-${VERSION}-linux-${ARCH}.tar.gz"
-BASE="https://github.com/otfabric/ocppctl/releases/download/v${VERSION}"
-curl -fsSLO "${BASE}/${FILE}"
-curl -fsSLO "${BASE}/ocppctl-${VERSION}-checksums.txt"
-
-# 3. Verify the download (should print "OK")
-grep "${FILE}" "ocppctl-${VERSION}-checksums.txt" | sha256sum -c -
-
-# 4. Extract and install (the binary in the archive carries the version and platform in its name)
-mkdir -p ocppctl-dl && tar -xzf "${FILE}" -C ocppctl-dl
-sudo install -m 0755 "$(find ocppctl-dl -type f -name 'ocppctl*' | head -n1)" /usr/local/bin/ocppctl
-```
-
-No `sudo`? Install into your home directory instead (and make sure `~/.local/bin` is in your `PATH`):
-
-```bash
-mkdir -p ~/.local/bin
-install -m 0755 "$(find ocppctl-dl -type f -name 'ocppctl*' | head -n1)" ~/.local/bin/ocppctl
-```
-
-### macOS
-
-```bash
-# 1. Find the latest version and your CPU architecture (arm64 = Apple Silicon, x86_64 = Intel)
-VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/otfabric/ocppctl/releases/latest | sed 's|.*/v||')
-case "$(uname -m)" in
-  arm64)   ARCH=arm64 ;;
-  x86_64)  ARCH=amd64 ;;
-esac
-
-# 2. Download the archive and the checksum file
-FILE="ocppctl-${VERSION}-darwin-${ARCH}.tar.gz"
-BASE="https://github.com/otfabric/ocppctl/releases/download/v${VERSION}"
-curl -fsSLO "${BASE}/${FILE}"
-curl -fsSLO "${BASE}/ocppctl-${VERSION}-checksums.txt"
-
-# 3. Verify the download (should print "OK")
-grep "${FILE}" "ocppctl-${VERSION}-checksums.txt" | shasum -a 256 -c -
-
-# 4. Extract and install (the binary in the archive carries the version and platform in its name)
-mkdir -p ocppctl-dl && tar -xzf "${FILE}" -C ocppctl-dl
-sudo install -m 0755 "$(find ocppctl-dl -type f -name 'ocppctl*' | head -n1)" /usr/local/bin/ocppctl
-```
-
-If you downloaded the archive with a web browser instead of `curl` and macOS refuses to run the binary ("cannot be verified"), remove the quarantine flag: `xattr -d com.apple.quarantine /usr/local/bin/ocppctl`.
-
-### Windows (PowerShell)
-
-```powershell
-# 1. Find the latest version and your CPU architecture
-$version = (Invoke-RestMethod https://api.github.com/repos/otfabric/ocppctl/releases/latest).tag_name.TrimStart('v')
-$arch    = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'amd64' }
-
-# 2. Download the archive and the checksum file
-$file = "ocppctl-$version-windows-$arch.zip"
-$base = "https://github.com/otfabric/ocppctl/releases/download/v$version"
-Invoke-WebRequest "$base/$file" -OutFile "$env:TEMP\$file"
-Invoke-WebRequest "$base/ocppctl-$version-checksums.txt" -OutFile "$env:TEMP\ocppctl-checksums.txt"
-
-# 3. Verify the download (throws an error on mismatch)
-$expected = ((Select-String -Path "$env:TEMP\ocppctl-checksums.txt" -Pattern $file).Line -split '\s+')[0]
-$actual   = (Get-FileHash "$env:TEMP\$file" -Algorithm SHA256).Hash
-if ($expected -ne $actual) { throw "Checksum mismatch for $file" }
-
-# 4. Extract to a per-user folder and name the program ocppctl.exe
-#    (the .exe in the archive carries the version and platform in its name)
-$dir = "$env:LOCALAPPDATA\Programs\ocppctl"
-New-Item -ItemType Directory -Force -Path $dir | Out-Null
-Expand-Archive "$env:TEMP\$file" -DestinationPath "$env:TEMP\ocppctl-dl" -Force
-$exe = Get-ChildItem "$env:TEMP\ocppctl-dl" -Recurse -Filter 'ocppctl*.exe' | Select-Object -First 1
-Copy-Item $exe.FullName "$dir\ocppctl.exe" -Force
-
-# 5. Add ocppctl to your user PATH (then open a new terminal)
-$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-if ($userPath -notlike "*$dir*") {
-  [Environment]::SetEnvironmentVariable('Path', "$userPath;$dir", 'User')
-}
-```
-
-If Windows SmartScreen warns about an unrecognised app, choose **More info → Run anyway**.
-
-### Manual download
-
-1. Open the [latest release](https://github.com/otfabric/ocppctl/releases/latest).
-2. Download the archive for your platform from the table above.
-3. Extract it, rename the binary to `ocppctl` (`ocppctl.exe` on Windows) and move it to a folder on your `PATH`.
-
-### Update
-
-Run the same commands again. They always fetch the latest release and overwrite the previous binary.
-
-### Build from source
-
-Requires Go 1.26 or later:
-
-```console
-git clone https://github.com/otfabric/ocppctl.git
-cd ocppctl
-make build
-```
-
-`make build` runs the checks and writes the binary to **`bin/ocppctl`** (see [Building](#building)). With a Go toolchain you can also install straight from the module:
-
-```console
-go install github.com/otfabric/ocppctl@latest
 ```
 
 ---
