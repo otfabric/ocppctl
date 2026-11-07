@@ -28,6 +28,26 @@ Linux (amd64, arm64, armv7), macOS (Intel, Apple silicon) and Windows (amd64, ar
 
 From source (Go 1.26+): `go install github.com/otfabric/ocppctl@latest`
 
+### Shell completion
+
+```bash
+# bash (needs the bash-completion package)
+mkdir -p ~/.local/share/bash-completion/completions
+ocppctl completion bash > ~/.local/share/bash-completion/completions/ocppctl
+
+# zsh: a directory on your fpath, then restart the shell
+mkdir -p ~/.zsh/completions && ocppctl completion zsh > ~/.zsh/completions/_ocppctl
+# and once in ~/.zshrc:  fpath=(~/.zsh/completions $fpath); autoload -U compinit && compinit
+
+# fish
+mkdir -p ~/.config/fish/completions && ocppctl completion fish > ~/.config/fish/completions/ocppctl.fish
+```
+
+```powershell
+# PowerShell: add this line to your profile ($PROFILE)
+ocppctl completion powershell | Out-String | Invoke-Expression
+```
+
 ---
 
 ## Why ocppctl?
@@ -265,8 +285,6 @@ Every command has `--help`, with a description and examples. Action names are ca
 | 130 | Interrupted before a result |
 
 See [docs/exitcodes.md](docs/exitcodes.md) for the details and the `code` values.
-
-**Shell completion:** `ocppctl completion bash` (or `zsh`, `fish`, `powershell`) prints a completion script; for example `source <(ocppctl completion bash)`.
 
 ### Connecting to a CSMS
 
