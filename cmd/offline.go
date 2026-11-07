@@ -71,7 +71,8 @@ the CALLERROR code a peer would answer with) and exits 3.`,
   # In a pipeline
   ocppctl client boot --ocpp-version 2.1 --payload-only | ocppctl validate BootNotification --ocpp-version 2.1 --payload -
 `,
-		Args: cobra.ExactArgs(1),
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: cli.CompleteActions(nil),
 	}
 	cfg := offline.ValidateConfig{Version: "2.0.1", OutputFormat: "text"}
 	runner.RegisterCommandCfg(cmd, &cfg, versionCompletion)
@@ -163,6 +164,8 @@ the rules of --ocpp-version; the payload is not validated against a schema (use
 	sort.Strings(types)
 	runner.RegisterCommandCfg(cmd, &cfg, versionCompletion, func(c *cobra.Command) {
 		_ = cli.RegisterEnumFlagCompletion(c, "type", types)
+		cli.RegisterActionFlagCompletion(c, "action", nil)
+		cli.RegisterErrorCodeCompletion(c, "error-code")
 	})
 	cli.MustMarkFlagRequired(cmd, "type")
 	cli.MustMarkFlagRequired(cmd, "id")
