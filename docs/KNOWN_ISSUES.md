@@ -14,7 +14,7 @@ entry is resolved, it moves to the release notes of the release that resolves it
 ocppctl is built on [go-ocpp](https://github.com/otfabric/go-ocpp). These are defects of
 that library, found while building and testing ocppctl. All three are fixed (G1 and G2
 in go-ocpp v0.1.2, G3 in v0.1.3), and ocppctl has had no workaround of its own since
-v0.1.1. ocppctl now requires go-ocpp v0.2.0.
+v0.1.1. ocppctl now requires go-ocpp v0.3.3.
 
 | # | Bug | Effect on ocppctl | Status |
 |---|-----|-------------------|--------|

@@ -1,5 +1,21 @@
 # ocppctl Releases
 
+## v0.4.1
+
+**Date:** 2026-11-08
+**Previous release:** v0.4.0
+
+### Summary
+
+Built on go-ocpp v0.3.3, and release binaries are built with the latest Go 1.26 patch release.
+
+### Changed
+
+- Built on go-ocpp v0.3.3 (was v0.2.0). v0.3.0 adds `ocpp.ConnInfo.Compression` and `server.Session.Compression()` (whether the WebSocket handshake negotiated permessage-deflate), additive and not used by ocppctl; v0.3.1 to v0.3.3 have no library code changes and qualify go-ocpp against ocpp-interop v0.6.2, v0.7.0 and v0.10.0. ocppctl behaves as before. `version` lists `go-ocpp 0.3.3`.
+- Release binaries are built with the latest Go 1.26 patch release (otfabric/.github release workflow v3.6.0); they were built with the exact Go version in `go.mod` (1.26.0).
+
+---
+
 ## v0.4.0
 
 **Date:** 2026-11-07
