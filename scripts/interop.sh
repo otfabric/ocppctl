@@ -13,7 +13,7 @@
 #      every station-sent sample sent by the reference station, then every
 #      CSMS-sent sample with "server call --yes".
 #
-# Usage: scripts/interop.sh [ocpp-interop tag]   (default v0.5.3)
+# Usage: scripts/interop.sh [ocpp-interop tag]   (default v0.10.0)
 # Needs docker and jq. Writes reports/interop-<tag>.tsv and prints a summary.
 # A CALLERROR answer is recorded as "callerror" with its code: a protocol
 # success, but not a pass. A message the reference could not or would not send
@@ -21,7 +21,7 @@
 # is skipped silently.
 set -uo pipefail
 
-TAG=${1:-v0.5.3}
+TAG=${1:-v0.10.0}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 BIN=$(mktemp -d)/ocppctl
 OUT=$ROOT/reports/interop-$TAG.tsv
@@ -115,7 +115,8 @@ wait_for() { # seconds command...
 
 # ---- A: ocppctl station -> reference CSMS ---------------------------------
 for sv in mobilityhouse:1.6 mobilityhouse:2.0.1 mobilityhouse:2.1 chargetime:1.6 chargetime:2.0.1 lorenzodonini:1.6 lorenzodonini:2.0.1 \
-	citrineos:1.6 citrineos:2.0.1 citrineos:2.1; do
+	citrineos:1.6 citrineos:2.0.1 citrineos:2.1 cbsigma:1.6 cbsigma:2.0.1 cbsigma:2.1 \
+	ocppkit:1.6 ocppkit:2.0.1 ocppkit:2.1 seanlee:1.6 seanlee:2.0.1 seanlee:2.1; do
 	stack=${sv%%:*} v=${sv#*:}
 	echo "A  ocppctl -> $stack CSMS, OCPP $v"
 	docker rm -f oc-csms >/dev/null 2>&1
@@ -155,12 +156,17 @@ done
 "$BIN" server start --listen 0.0.0.0:$SERVER_PORT --path /ocpp --no-auth --insecure-transport --control-socket "$SOCK" --format json >/tmp/oc-server.jsonl 2>&1 &
 SRV=$!
 wait_for 10 test -S "$SOCK"
-for sv in mobilityhouse:1.6 mobilityhouse:2.0.1 mobilityhouse:2.1 chargetime:1.6 chargetime:2.0.1 lorenzodonini:1.6 lorenzodonini:2.0.1 everest:1.6 everest:2.0.1 everest:2.1; do
+for sv in mobilityhouse:1.6 mobilityhouse:2.0.1 mobilityhouse:2.1 chargetime:1.6 chargetime:2.0.1 lorenzodonini:1.6 lorenzodonini:2.0.1 everest:1.6 everest:2.0.1 everest:2.1 \
+	cbsigma:1.6 cbsigma:2.0.1 cbsigma:2.1 ocppkit:1.6 ocppkit:2.0.1 ocppkit:2.1 seanlee:1.6 seanlee:2.0.1 seanlee:2.1; do
 	stack=${sv%%:*} v=${sv#*:}
 	echo "B  $stack station -> ocppctl, OCPP $v"
+	# the ocppkit station has security profiles 1 to 3 only (contract 0.7):
+	# it sends the fixture's password, which the server (--no-auth) ignores
+	profile=0
+	[ "$stack" = ocppkit ] && profile=1
 	docker rm -f oc-station >/dev/null 2>&1
 	docker run -d --name oc-station --add-host host.docker.internal:host-gateway "$(image "$stack")" \
-		client run --version "$v" --url ws://host.docker.internal:$SERVER_PORT/ocpp >/dev/null
+		client run --version "$v" --url ws://host.docker.internal:$SERVER_PORT/ocpp --security-profile "$profile" >/dev/null
 	if ! wait_for 60 sh -c "'$BIN' server stations --control-socket '$SOCK' --format json | jq -e '.stations[] | select(.identity == \"$ID\" and .version == \"$v\")'"; then
 		emit station-to-csms "$stack" "$v" "(connect)" "fail no connection"
 		continue
