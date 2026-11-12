@@ -25,34 +25,41 @@ v0.1.1. ocppctl now requires go-ocpp v0.3.3.
 ## Findings in the reference implementations
 
 From the interoperability run against [ocpp-interop](https://github.com/otfabric/ocpp-interop)
-v0.5.3, run with go-ocpp v0.2.0 (`scripts/interop.sh`, results in
-[`reports/interop-v0.5.3.tsv`](../reports/interop-v0.5.3.tsv); the same counts as with v0.4.1
-and go-ocpp v0.1.2, [`reports/interop-v0.4.1.tsv`](../reports/interop-v0.4.1.tsv)): every
-fixture sample in both directions, five references. **1154 exchanges passed, 29 were answered with a CALLERROR,
-32 were skipped and 3 failed.**
+v0.10.0 (contract 0.8), run with ocppctl v0.4.2 and go-ocpp v0.3.3 (`scripts/interop.sh`, results in
+[`reports/interop-v0.10.0.tsv`](../reports/interop-v0.10.0.tsv)): every fixture sample in both
+directions, eight references. **2309 exchanges passed, 53 were answered with a CALLERROR,
+44 were skipped and 3 failed.** The five references of the earlier run against v0.5.3
+([`reports/interop-v0.5.3.tsv`](../reports/interop-v0.5.3.tsv), go-ocpp v0.2.0) give the
+same results but one: CitrineOS v2.1.0 answers the 1.6 SecurityEventNotification, which
+CitrineOS v2.0.1 answered with NotImplemented (1155 passed, 28 CALLERRORs, 32 skips, 3
+failures). cB-Sigma, ocpp-kit and seanlee0923/ocpp are new in ocpp-interop v0.7.0 to v0.9.0.
 
 - The 3 failures are U1: responses of ocpp-go that do not conform to the OCA schema, which
   ocppctl refuses (`invalid_response`), as it should.
-- The 32 skips are messages the reference did not send: ocppctl's event log shows it never
-  received them (U2, U3, U4, U5).
-- The 29 CALLERRORs are answers: 9 are ocppctl's own NotSupported for the services it does
-  not have (L3), 20 are CitrineOS's and EVerest's (U4, U5).
+- The 44 skips are messages the reference did not send: ocppctl's event log shows it never
+  received them (U2, U3, U4, U5, U7).
+- The 53 CALLERRORs are answers: 21 are ocppctl's own NotSupported for the services it does
+  not have (L3), 19 are CitrineOS's and EVerest's (U4, U5), 11 seanlee0923/ocpp's (U7) and
+  2 ocpp-kit's (U6).
 
 Every non-pass lies with the other implementation or its test adapter, or with L3. ocppctl
-reports them; it does not hide or work around them. The root causes were traced in
+reports them; it does not hide or work around them. The root causes of U1 to U5 were traced in
 ocpp-interop v0.4.1 ([otfabric/ocpp-interop#7](https://github.com/otfabric/ocpp-interop/pull/7)),
 which fixed what was the adapters' (the EVerest adapter declared too few actions) and found
-nothing the adapters can honestly change for these: the pinned upstreams have no newer
-release that fixes them. The results are the same as against v0.4.0: the script sends every
-fixture sample, whatever an adapter declares.
+nothing the adapters can honestly change for these; U6 and U7 are recorded in ocpp-interop's
+adapter READMEs and known bugs. The script sends every fixture sample, whatever an adapter
+declares. ocpp-interop v0.10.0's optional Local Controller (`local-controller`, ocpp-kit only)
+is not part of this run.
 
 | # | Implementation | Finding | Root cause | What ocppctl does |
 |---|----------------|---------|------------|-------------------|
 | U1 | lorenzodonini/ocpp-go v0.19.0, 2.0.1 station | Responds to Reset and SetNetworkProfile with `"statusInfo": null`, and to GetCompositeSchedule with a top-level `evseId` the schema does not have. | ocpp-go's response types: `StatusInfo` without `omitempty` (`ocpp2.0.1/provisioning/reset.go` L61-64, `set_network_profile.go` L170-173); `GetCompositeScheduleResponse` writes `evseId` (`smartcharging/get_composite_schedule.go` L46-50). The `evseId` is removed on ocpp-go's master (unreleased). | `server call` exits 6, `invalid_response`, with the field in the error. |
 | U2 | mobilityhouse/ocpp 2.1.0, 2.1 station | Refuses to send the BatterySwap fixture (additional properties `SoC`, `soh`). | The fixture is right (`soC`, `soH`, as the OCA schema). The library's case conversion turns them into `SoC` and `soh` (`ocpp/charge_point.py` L57, L399), which its own validation then refuses (L414). | None needed: the message never reaches ocppctl. BatterySwap passes from the EVerest station. |
 | U3 | mobilityhouse 2.1.0 and EVerest libocpp, 2.1 stations | Cannot send the SEND NotifyPeriodicEventStream. | Neither library has OCPP-J message type 6 (`ocpp.messages.MessageType`; libocpp `common/call_types.hpp` L47-52). | Skipped. ocppctl sends and receives SENDs (tested against itself and go-ocpp). |
-| U4 | EVerest libocpp (everest-core 2026.02.1), 2.1 station | Cannot send GetCertificateChainStatus and ReportDERControl; answers NotifyWebPaymentStarted with NotImplemented. | Missing from `ocpp::v2::MessageType` (`include/ocpp/v2/types.hpp`). ReportDERControl is on everest-core's main, not in a release. | Skipped (cannot send); the CALLERROR is reported as received. |
-| U5 | CitrineOS core v2.0.1 (CSMS, 1.6, 2.0.1, 2.1) | Its message API has no route for 22 action/version pairs (for example ReserveNow, GetLog and InstallCertificate in 1.6; most 2.1 additions such as the tariff, DER and periodic-event-stream messages), and it refuses to send five fixture samples (SignedUpdateFirmware in 1.6; CancelReservation, no such reservation, and InstallCertificate, which it parses, in 2.0.1 and 2.1). It answers the 1.6 Security Whitepaper messages with NotImplemented, NotifyCustomerInformation and NotifyDisplayMessages with PropertyConstraintViolation (a `requestId` it did not send), and SignCertificate (2.0.1, 2.1) and nine other 2.1 messages with FormatViolation although the samples conform to the OCA schemas. It serves TLS only to clients that send SNI, and mixes up two connections of the same identity when the second opens before it has handled the close of the first. | CitrineOS's own behaviour (the adapter answers nothing itself: `fixtureAnswers: false`). The TLS and reconnection findings are recorded with evidence in ocpp-interop and go-ocpp. | Skipped (cannot send) or reported as answered. The interop script waits until CitrineOS has handled a close before connecting again, and the simulated station waits 2 s after a Reset before it reconnects, as a restarting charger does. |
+| U4 | EVerest libocpp (everest-core 2026.02.2), 2.1 station | Cannot send GetCertificateChainStatus and ReportDERControl; answers NotifyWebPaymentStarted with NotImplemented. | Missing from `ocpp::v2::MessageType` (`include/ocpp/v2/types.hpp`). ReportDERControl is on everest-core's main, not in a release. | Skipped (cannot send); the CALLERROR is reported as received. |
+| U5 | CitrineOS core v2.1.0 (CSMS, 1.6, 2.0.1, 2.1) | Its message API has no route for 22 action/version pairs (for example ReserveNow, GetLog and InstallCertificate in 1.6; most 2.1 additions such as the tariff, DER and periodic-event-stream messages), and it refuses to send five fixture samples (SignedUpdateFirmware in 1.6; CancelReservation, no such reservation, and InstallCertificate, which it parses, in 2.0.1 and 2.1). It answers the 1.6 Security Whitepaper messages LogStatusNotification, SignCertificate and SignedFirmwareStatusNotification with NotImplemented (SecurityEventNotification passes since v2.1.0), NotifyCustomerInformation and NotifyDisplayMessages with PropertyConstraintViolation (a `requestId` it did not send), and SignCertificate (2.0.1, 2.1) and nine other 2.1 messages with FormatViolation although the samples conform to the OCA schemas. CitrineOS v2.0.1 served TLS only to clients that send SNI (v2.1.0, in ocpp-interop v0.6.1, serves a certificate of its own without SNI), and mixes up two connections of the same identity when the second opens before it has handled the close of the first. | CitrineOS's own behaviour (the adapter answers nothing itself: `fixtureAnswers: false`). The TLS and reconnection findings are recorded with evidence in ocpp-interop and go-ocpp. | Skipped (cannot send) or reported as answered. The interop script waits until CitrineOS has handled a close before connecting again, and the simulated station waits 2 s after a Reset before it reconnects, as a restarting charger does. |
+| U6 | hupe1980/ocpp-kit 0.3.0 (CSMS and station, 2.1) | NotifyWebPaymentStarted is a station message in ocpp-kit, where OCPP 2.1 has the CSMS send it: its CSMS refuses to send it to ocppctl's station, with a CALLERROR NotSupported of its own that never reaches the wire, and its station answers ocppctl's with NotSupported. | ocpp-kit's message direction (hupe1980/ocpp-kit#1, tracked in otfabric/ocpp-interop#26). | Recorded as a CALLERROR in both directions. NotifyWebPaymentStarted passes with the mobilityhouse, cB-Sigma and seanlee references. |
+| U7 | seanlee0923/ocpp v0.3.0 (CSMS and station, 1.6, 2.1) | Has no OCPP 1.6 Security Whitepaper messages: its CSMS and station cannot send them (11 skips) and answer them with NotImplemented (11 CALLERRORs). Cannot send the 2.1 SEND NotifyPeriodicEventStream (1 skip). | Not in the library (`adapters/seanlee/README.md` of ocpp-interop). | Skipped (cannot send) or reported as answered. |
 
 Also found, not involving ocppctl: the mobilityhouse CSMS validates the draft-06 schemas with
 a draft-04 validator and so refuses EVerest's `20000.0` (the same case as G2), recorded in

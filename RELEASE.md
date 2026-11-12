@@ -1,5 +1,29 @@
 # ocppctl Releases
 
+## v0.4.2
+
+**Date:** 2026-11-13
+**Previous release:** v0.4.1
+
+### Summary
+
+`scripts/interop.sh` runs against ocpp-interop v0.10.0 (contract 0.8) and its eight reference implementations; ocppctl's code is unchanged, still on go-ocpp v0.3.3, the latest release.
+
+### Changed
+
+- **`scripts/interop.sh`:** the default ocpp-interop tag is v0.10.0 (was v0.5.3), and it also runs the cB-Sigma, ocpp-kit and seanlee0923/ocpp references, as CSMS and as station, in OCPP 1.6, 2.0.1 and 2.1. The ocpp-kit station has security profiles 1 to 3 only (contract 0.7), so it connects with profile 1; ocppctl's server, started with `--no-auth`, ignores the password.
+- **`make build`** marks the commit `-dirty` when the working tree has changes, as `go build` does (#21). Release binaries are unchanged: the release workflow sets the commit.
+
+### Interoperability
+
+- Against ocpp-interop v0.10.0, every fixture sample in both directions (`reports/interop-v0.10.0.tsv`): of 2409 exchanges, 2309 passed, 53 were answered with a CALLERROR, 44 were skipped because the reference could not send the message, and 3 failed on schema-invalid responses of ocpp-go (U1). The five references of the v0.5.3 run give the same results except one more pass: CitrineOS v2.1.0 answers the 1.6 SecurityEventNotification. The new findings are U6 (ocpp-kit's NotifyWebPaymentStarted direction) and U7 (seanlee0923/ocpp has no 1.6 Security Whitepaper messages and no SEND), in docs/KNOWN_ISSUES.md.
+
+### Documentation
+
+- README.md, CONTRIBUTING.md and docs/KNOWN_ISSUES.md describe the new run, with the ocppctl and go-ocpp versions used.
+
+---
+
 ## v0.4.1
 
 **Date:** 2026-11-08
