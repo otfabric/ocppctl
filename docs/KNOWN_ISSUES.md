@@ -14,7 +14,7 @@ entry is resolved, it moves to the release notes of the release that resolves it
 ocppctl is built on [go-ocpp](https://github.com/otfabric/go-ocpp). These are defects of
 that library, found while building and testing ocppctl. All three are fixed (G1 and G2
 in go-ocpp v0.1.2, G3 in v0.1.3), and ocppctl has had no workaround of its own since
-v0.1.1. ocppctl now requires go-ocpp v0.3.3.
+v0.1.1. ocppctl now requires go-ocpp v0.4.0.
 
 | # | Bug | Effect on ocppctl | Status |
 |---|-----|-------------------|--------|
@@ -25,7 +25,7 @@ v0.1.1. ocppctl now requires go-ocpp v0.3.3.
 ## Findings in the reference implementations
 
 From the interoperability run against [ocpp-interop](https://github.com/otfabric/ocpp-interop)
-v0.10.0 (contract 0.8), run with ocppctl v0.4.2 and go-ocpp v0.3.3 (`scripts/interop.sh`, results in
+v0.10.0 (contract 0.8), run with ocppctl v0.5.0 and go-ocpp v0.4.0 (`scripts/interop.sh`, results in
 [`reports/interop-v0.10.0.tsv`](../reports/interop-v0.10.0.tsv)): every fixture sample in both
 directions, eight references. **2309 exchanges passed, 53 were answered with a CALLERROR,
 44 were skipped and 3 failed.** The five references of the earlier run against v0.5.3

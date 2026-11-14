@@ -1,5 +1,42 @@
 # ocppctl Releases
 
+## v0.5.0
+
+**Date:** 2026-11-14
+**Previous release:** v0.4.2
+
+### Summary
+
+Built on go-ocpp v0.4.0: bounded WebSocket closing handshakes, drains that a
+station sending SENDs cannot hold, and stricter payload checks.
+
+### Changed
+
+- **`ocppctl server` and `ocppctl client`:** every WebSocket closing
+  handshake ends within 10 s, after which the connection is closed;
+  refusals made by the WebSocket upgrade close their connection, and the
+  Origin check runs before authentication.
+- **Shutdown:** a 2.1 station that keeps sending SENDs no longer keeps the
+  server from shutting down.
+- **Payloads:** a `null` element in an array of integers or strings is
+  refused with TypeConstraintViolation, and an object that names a property
+  twice with FormatViolation (FormationViolation in 1.6); DataTransfer
+  `data` accepts `null`.
+- **Calls:** a CALL whose response timeout or context ended before it was
+  written is not sent.
+- **Handshake headers:** extra headers are not sent after a redirect to
+  another host.
+
+### Interoperability
+
+- `scripts/interop.sh` against ocpp-interop v0.10.0 again, on go-ocpp v0.4.0: the same results as v0.4.2 (2309 passed, 53 answered with a CALLERROR, 44 skipped, 3 failed on schema-invalid responses of ocpp-go (U1)).
+
+### Dependencies
+
+- github.com/otfabric/go-ocpp v0.3.3 -> v0.4.0.
+
+---
+
 ## v0.4.2
 
 **Date:** 2026-11-13
