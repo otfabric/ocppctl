@@ -27,6 +27,10 @@ station sending SENDs cannot hold, and stricter payload checks.
 - **Handshake headers:** extra headers are not sent after a redirect to
   another host.
 
+### Fixed
+
+- **`ocppctl server start --control-socket`:** a control connection accepted while the server was stopping no longer races with the shutdown.
+
 ### Interoperability
 
 - `scripts/interop.sh` against ocpp-interop v0.10.0 again, on go-ocpp v0.4.0: the same results as v0.4.2 (2309 passed, 53 answered with a CALLERROR, 44 skipped, 3 failed on schema-invalid responses of ocpp-go (U1)).

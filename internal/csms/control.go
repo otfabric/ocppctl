@@ -65,6 +65,9 @@ type control struct {
 	wg   sync.WaitGroup
 	mu   sync.Mutex
 	open map[net.Conn]bool
+	// closed is set by close under mu: no connection is added to wg after
+	// close has started waiting for it.
+	closed bool
 }
 
 // listenControl creates the control socket at path, mode 0600. A socket left behind by a
@@ -102,14 +105,21 @@ func (ct *control) serve(ctx context.Context) {
 			return
 		}
 		ct.mu.Lock()
+		if ct.closed {
+			ct.mu.Unlock()
+			_ = conn.Close()
+			return
+		}
 		ct.open[conn] = true
+		ct.wg.Add(1)
 		ct.mu.Unlock()
-		ct.wg.Go(func() {
+		go func() {
+			defer ct.wg.Done()
 			ct.handle(ctx, conn)
 			ct.mu.Lock()
 			delete(ct.open, conn)
 			ct.mu.Unlock()
-		})
+		}()
 	}
 }
 
@@ -117,6 +127,7 @@ func (ct *control) serve(ctx context.Context) {
 func (ct *control) close() {
 	_ = ct.ln.Close()
 	ct.mu.Lock()
+	ct.closed = true
 	for conn := range ct.open {
 		_ = conn.Close()
 	}
