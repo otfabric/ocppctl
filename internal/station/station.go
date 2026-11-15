@@ -687,7 +687,7 @@ func (s *Station) meter(ctx context.Context, x *session) {
 	x.advance()
 	x.seq++
 	u := payload.TransactionUpdate{EVSE: x.evse, Connector: s.model.connector16(x.evse, x.connector), Transaction: x.tx,
-		EnergyWh: float64(int64(x.energy)), PowerW: x.power, SeqNo: x.seq}
+		EnergyWh: math.Trunc(x.energy), PowerW: x.power, SeqNo: x.seq}
 	action, req, err := u.Build(s.version())
 	if err != nil {
 		s.emit(types.StationEvent{Event: "error", Message: err.Error()})
@@ -707,7 +707,7 @@ func (s *Station) stopSession(ctx context.Context, id, reason, trigger string) {
 	x.advance()
 	x.seq++
 	v := s.version()
-	stop := payload.TransactionStop{EVSE: x.evse, Connector: x.connector, Transaction: x.tx, MeterStopWh: float64(int64(x.energy)),
+	stop := payload.TransactionStop{EVSE: x.evse, Connector: x.connector, Transaction: x.tx, MeterStopWh: math.Trunc(x.energy),
 		Reason: reason, SeqNo: x.seq, TriggerReason: trigger}
 	if v == ocpp.V16 && reason == "Local" {
 		stop.Reason = "" // Local is 1.6's default reason

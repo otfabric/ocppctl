@@ -1,5 +1,78 @@
 # ocppctl Releases
 
+## v0.6.0
+
+**Date:** 2026-11-15
+**Previous release:** v0.5.1
+
+### Summary
+
+`--header-file` keeps handshake headers such as tokens off the command line.
+What ocppctl reads from files, stdin and its peers is bounded, and documented
+in SECURITY.md under Resource Limits.
+
+### Added
+
+- **`ocppctl client` (every command that connects):** `--header-file`, or
+  `OCPPCTL_HEADER_FILE`: extra handshake headers from a file of `NAME=VALUE`
+  lines, at most 64 KiB. Blank lines and `#` comments are skipped, and its
+  headers come before those of `--header`. A malformed line is refused by its
+  number, never shown (exit 3, `input_decode_failed`). A `--header` value is on
+  the command line, which other local users can read in the process list: the
+  help, README.md and SECURITY.md say so, and point to `--header-file`.
+- **JSON results:** `received_dropped` (`client call` and the shortcuts) and
+  `unexpected_dropped` (`client script`) count the CALLs and SENDs of the peer
+  that were answered but not listed; omitted when there are none
+  (docs/json-output.md). The text output then adds a line with the count.
+
+### Changed
+
+- **Input sizes:** `--payload @file` and `--payload -` (also of `validate`,
+  `frame encode` and `server call`) are at most 68 KiB, what an OCPP-J frame
+  carries (exit 3, `invalid_payload`); `--password-file` and `--header-file`
+  at most 64 KiB (exit 3, `input_decode_failed`); station and CSMS models
+  (`--config`) and scenarios at most 4 MiB, and a payload or answer file of a
+  scenario at most 68 KiB (exit 3, `invalid_config`). Reading stops just past
+  the limit.
+- **CALLs received meanwhile:** `received` and `unexpected` list the first
+  1000 CALLs and SENDs of the peer, as long as their payloads total at most
+  8 MiB; the rest are answered as before and counted. A failed
+  `expect_no_call` names the first 16 actions that arrived and counts the
+  others.
+- **`ocppctl server start --rate-limit`:** a number from 0 (no limit) to
+  1000000 messages a second; any other value is refused before listening
+  (exit 3, `invalid_input`).
+- **Station model:** `power_w` and `remote_power_w` are numbers from 0 to
+  10000000 W (10 MW); any other value is refused before connecting (exit 3,
+  `invalid_config`).
+- **`ocppctl client`:** a WebSocket closing handshake ends within 10 s, also
+  when the CSMS does not complete it, as for the server; the HTTP transport of
+  the connection is go-ocpp's own. `client probe` reports the same handshake
+  details.
+- **`ocppctl server start`:** returns once every station session has ended and
+  its `disconnected` event is written, within the 10 s bound of the closing
+  handshake. A station that connects while the server stops is refused with
+  HTTP 503.
+- **Control socket:** on Unix it has mode 0600 from the moment it exists.
+  When its directory can be written by other users and has no sticky bit,
+  `server start` prints a warning on stderr.
+
+### Tests
+
+- Fuzz targets `FuzzStationAnswer` and `FuzzCSMSAnswer` feed the answers of
+  the built-in station and CSMS, from a seed of every CALL of every version
+  (`testdata/answer-seeds.json`): every answer is a CALLRESULT that passes its
+  response schema, or a CALLERROR.
+- Every input limit has a boundary table and an allocation budget; the client
+  closing handshake and the end of `server start` have tests of their own.
+
+### Upgrade notes
+
+- No exit code changes: an input outside a new limit is refused with exit 3
+  and an existing error code. The limits are in SECURITY.md.
+
+---
+
 ## v0.5.1
 
 **Date:** 2026-11-15

@@ -80,6 +80,7 @@ Deliberate gaps of ocppctl. They are not bugs, but you may run into them.
 | L7 | **One connection per one-shot command.** | A CSMS that requires an accepted boot on the same connection needs `--boot`; for longer exchanges use `client script` or `client run`. |
 | L8 | **Stations of an identity range share one model and one password.** | Run several `client run` processes for different models. |
 | L9 | **The simulated station does not Authorize before a session**, and its device model and configuration values do not change its behaviour, except the heartbeat interval. | Script the Authorize with `client script` when the CSMS under test requires it. |
+| L10 | **Inputs have fixed size limits**: a payload read from a file or stdin is at most 68 KiB, a model or scenario 4 MiB, a password or header file 64 KiB; a result lists at most 1000 of the CALLs the peer sent meanwhile. | The limits are well above real inputs of each kind, and listed in [SECURITY.md](../SECURITY.md#resource-limits). The CALLs past the 1000 are answered as usual and counted. |
 
 ## Open questions
 

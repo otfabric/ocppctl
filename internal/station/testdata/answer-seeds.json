@@ -1,0 +1,545 @@
+{
+ "1.6": {
+  "CancelReservation": [
+   {"reservationId":0},
+   {"reservationId":1}
+  ],
+  "CertificateSigned": [
+   {"certificateChain":"x"},
+   {"certificateChain":"ab1"}
+  ],
+  "ChangeAvailability": [
+   {"connectorId":0,"type":"Inoperative"},
+   {"connectorId":1,"type":"Operative"}
+  ],
+  "ChangeConfiguration": [
+   {"key":"x","value":"x"},
+   {"key":"ab1","value":"ab1"}
+  ],
+  "ClearCache": [
+   {}
+  ],
+  "ClearChargingProfile": [
+   {},
+   {"id":1,"connectorId":1,"chargingProfilePurpose":"TxProfile","stackLevel":1}
+  ],
+  "DataTransfer": [
+   {"vendorId":"x"},
+   {"vendorId":"ab1","messageId":"ab1","data":"ab1"}
+  ],
+  "DeleteCertificate": [
+   {"certificateHashData":{"hashAlgorithm":"SHA256","issuerNameHash":"x","issuerKeyHash":"x","serialNumber":"x"}},
+   {"certificateHashData":{"hashAlgorithm":"SHA512","issuerNameHash":"ab1","issuerKeyHash":"ab1","serialNumber":"ab1"}}
+  ],
+  "ExtendedTriggerMessage": [
+   {"requestedMessage":"BootNotification"},
+   {"requestedMessage":"StatusNotification","connectorId":1}
+  ],
+  "GetCompositeSchedule": [
+   {"connectorId":0,"duration":0},
+   {"connectorId":1,"duration":1,"chargingRateUnit":"W"}
+  ],
+  "GetConfiguration": [
+   {},
+   {"key":["ab1"]},
+   {"key":["HeartbeatInterval","Nope"]},
+   {"key":["HeartbeatInterval"]}
+  ],
+  "GetDiagnostics": [
+   {"location":"https://example.com/f"},
+   {"location":"https://example.com/f","retries":1,"retryInterval":1,"startTime":"2026-01-01T00:00:00Z","stopTime":"2026-01-01T00:00:00Z"}
+  ],
+  "GetInstalledCertificateIds": [
+   {"certificateType":"CentralSystemRootCertificate"},
+   {"certificateType":"ManufacturerRootCertificate"}
+  ],
+  "GetLocalListVersion": [
+   {}
+  ],
+  "GetLog": [
+   {"log":{"remoteLocation":"x"},"logType":"DiagnosticsLog","requestId":0},
+   {"log":{"remoteLocation":"ab1","oldestTimestamp":"2026-01-01T00:00:00Z","latestTimestamp":"2026-01-01T00:00:00Z"},"logType":"SecurityLog","requestId":1,"retries":1,"retryInterval":1}
+  ],
+  "InstallCertificate": [
+   {"certificateType":"CentralSystemRootCertificate","certificate":"x"},
+   {"certificateType":"ManufacturerRootCertificate","certificate":"ab1"}
+  ],
+  "RemoteStartTransaction": [
+   {"idTag":"x"},
+   {"connectorId":1,"idTag":"ab1","chargingProfile":{"chargingProfileId":1,"transactionId":1,"stackLevel":1,"chargingProfilePurpose":"TxProfile","chargingProfileKind":"Relative","recurrencyKind":"Weekly","validFrom":"2026-01-01T00:00:00Z","validTo":"2026-01-01T00:00:00Z","chargingSchedule":{"duration":1,"startSchedule":"2026-01-01T00:00:00Z","chargingRateUnit":"W","chargingSchedulePeriod":[{"startPeriod":1,"limit":0.1,"numberPhases":1}],"minChargingRate":0.1}}},
+   {"idTag":"TAG1","connectorId":9},
+   {"idTag":"TAG1","connectorId":1},
+   {"idTag":"TAG2","connectorId":2}
+  ],
+  "RemoteStopTransaction": [
+   {"transactionId":0},
+   {"transactionId":1},
+   {"transactionId":99},
+   {"transactionId":7}
+  ],
+  "ReserveNow": [
+   {"connectorId":0,"expiryDate":"2026-01-01T00:00:00Z","idTag":"x","reservationId":0},
+   {"connectorId":1,"expiryDate":"2026-01-01T00:00:00Z","idTag":"ab1","parentIdTag":"ab1","reservationId":1}
+  ],
+  "Reset": [
+   {"type":"Hard"},
+   {"type":"Soft"}
+  ],
+  "SendLocalList": [
+   {"listVersion":0,"updateType":"Differential"},
+   {"listVersion":1,"localAuthorizationList":[{"idTag":"ab1","idTagInfo":{"expiryDate":"2026-01-01T00:00:00Z","parentIdTag":"ab1","status":"ConcurrentTx"}}],"updateType":"Full"}
+  ],
+  "SetChargingProfile": [
+   {"connectorId":0,"csChargingProfiles":{"chargingProfileId":0,"stackLevel":0,"chargingProfilePurpose":"ChargePointMaxProfile","chargingProfileKind":"Absolute","chargingSchedule":{"chargingRateUnit":"A","chargingSchedulePeriod":[]}}},
+   {"connectorId":1,"csChargingProfiles":{"chargingProfileId":1,"transactionId":1,"stackLevel":1,"chargingProfilePurpose":"TxProfile","chargingProfileKind":"Relative","recurrencyKind":"Weekly","validFrom":"2026-01-01T00:00:00Z","validTo":"2026-01-01T00:00:00Z","chargingSchedule":{"duration":1,"startSchedule":"2026-01-01T00:00:00Z","chargingRateUnit":"W","chargingSchedulePeriod":[{"startPeriod":1,"limit":0.1,"numberPhases":1}],"minChargingRate":0.1}}}
+  ],
+  "SignedUpdateFirmware": [
+   {"requestId":0,"firmware":{"location":"x","retrieveDateTime":"2026-01-01T00:00:00Z","signingCertificate":"x","signature":"x"}},
+   {"retries":1,"retryInterval":1,"requestId":1,"firmware":{"location":"ab1","retrieveDateTime":"2026-01-01T00:00:00Z","installDateTime":"2026-01-01T00:00:00Z","signingCertificate":"ab1","signature":"ab1"}}
+  ],
+  "TriggerMessage": [
+   {"requestedMessage":"BootNotification"},
+   {"requestedMessage":"StatusNotification","connectorId":1},
+   {"requestedMessage":"Heartbeat"},
+   {"requestedMessage":"MeterValues"},
+   {"requestedMessage":"FirmwareStatusNotification"},
+   {"requestedMessage":"DiagnosticsStatusNotification"},
+   {"requestedMessage":"StatusNotification"}
+  ],
+  "UnlockConnector": [
+   {"connectorId":0},
+   {"connectorId":1}
+  ],
+  "UpdateFirmware": [
+   {"location":"https://example.com/f","retrieveDate":"2026-01-01T00:00:00Z"},
+   {"location":"https://example.com/f","retries":1,"retrieveDate":"2026-01-01T00:00:00Z","retryInterval":1},
+   {"location":"https://x/fw.bin","retrieveDate":"2026-01-01T00:00:00Z"}
+  ]
+ },
+ "2.0.1": {
+  "CancelReservation": [
+   {"reservationId":0},
+   {"customData":{"vendorId":"ab1"},"reservationId":1},
+   {"reservationId":1}
+  ],
+  "CertificateSigned": [
+   {"certificateChain":"x"},
+   {"customData":{"vendorId":"ab1"},"certificateChain":"ab1","certificateType":"V2GCertificate"}
+  ],
+  "ChangeAvailability": [
+   {"operationalStatus":"Inoperative"},
+   {"customData":{"vendorId":"ab1"},"evse":{"customData":{"vendorId":"ab1"},"id":1,"connectorId":1},"operationalStatus":"Operative"}
+  ],
+  "ClearCache": [
+   {},
+   {"customData":{"vendorId":"ab1"}}
+  ],
+  "ClearChargingProfile": [
+   {},
+   {"customData":{"vendorId":"ab1"},"chargingProfileId":1,"chargingProfileCriteria":{"customData":{"vendorId":"ab1"},"evseId":1,"chargingProfilePurpose":"TxProfile","stackLevel":1}}
+  ],
+  "ClearDisplayMessage": [
+   {"id":0},
+   {"customData":{"vendorId":"ab1"},"id":1}
+  ],
+  "ClearVariableMonitoring": [
+   {"id":[0]},
+   {"customData":{"vendorId":"ab1"},"id":[1]},
+   {"id":[4,5]}
+  ],
+  "CostUpdated": [
+   {"totalCost":0,"transactionId":"x"},
+   {"customData":{"vendorId":"ab1"},"totalCost":1,"transactionId":"ab1"}
+  ],
+  "CustomerInformation": [
+   {"requestId":0,"report":false,"clear":false},
+   {"customData":{"vendorId":"ab1"},"customerCertificate":{"customData":{"vendorId":"ab1"},"hashAlgorithm":"SHA512","issuerNameHash":"ab1","issuerKeyHash":"ab1","serialNumber":"ab1"},"idToken":{"customData":{"vendorId":"ab1"},"additionalInfo":[{"customData":{"vendorId":"ab1"},"additionalIdToken":"ab1","type":"ab1"}],"idToken":"ab1","type":"NoAuthorization"},"requestId":1,"report":true,"clear":true,"customerIdentifier":"ab1"}
+  ],
+  "DataTransfer": [
+   {"vendorId":"x"},
+   {"customData":{"vendorId":"ab1"},"messageId":"ab1","data":{"a":[1,"b",true,null]},"vendorId":"ab1"}
+  ],
+  "DeleteCertificate": [
+   {"certificateHashData":{"hashAlgorithm":"SHA256","issuerNameHash":"x","issuerKeyHash":"x","serialNumber":"x"}},
+   {"customData":{"vendorId":"ab1"},"certificateHashData":{"customData":{"vendorId":"ab1"},"hashAlgorithm":"SHA512","issuerNameHash":"ab1","issuerKeyHash":"ab1","serialNumber":"ab1"}}
+  ],
+  "GetBaseReport": [
+   {"requestId":0,"reportBase":"ConfigurationInventory"},
+   {"customData":{"vendorId":"ab1"},"requestId":1,"reportBase":"SummaryInventory"},
+   {"requestId":3,"reportBase":"FullInventory"}
+  ],
+  "GetChargingProfiles": [
+   {"requestId":0,"chargingProfile":{}},
+   {"customData":{"vendorId":"ab1"},"requestId":1,"evseId":1,"chargingProfile":{"customData":{"vendorId":"ab1"},"chargingProfilePurpose":"TxProfile","stackLevel":1,"chargingProfileId":[1],"chargingLimitSource":["CSO"]}}
+  ],
+  "GetCompositeSchedule": [
+   {"duration":0,"evseId":0},
+   {"customData":{"vendorId":"ab1"},"duration":1,"chargingRateUnit":"A","evseId":1}
+  ],
+  "GetDisplayMessages": [
+   {"requestId":0},
+   {"customData":{"vendorId":"ab1"},"id":[1],"requestId":1,"priority":"NormalCycle","state":"Unavailable"}
+  ],
+  "GetInstalledCertificateIds": [
+   {},
+   {"customData":{"vendorId":"ab1"},"certificateType":["ManufacturerRootCertificate"]}
+  ],
+  "GetLocalListVersion": [
+   {},
+   {"customData":{"vendorId":"ab1"}}
+  ],
+  "GetLog": [
+   {"log":{"remoteLocation":"x"},"logType":"DiagnosticsLog","requestId":0},
+   {"customData":{"vendorId":"ab1"},"log":{"customData":{"vendorId":"ab1"},"remoteLocation":"ab1","oldestTimestamp":"2026-01-01T00:00:00Z","latestTimestamp":"2026-01-01T00:00:00Z"},"logType":"SecurityLog","requestId":1,"retries":1,"retryInterval":1}
+  ],
+  "GetMonitoringReport": [
+   {"requestId":0},
+   {"customData":{"vendorId":"ab1"},"componentVariable":[{"customData":{"vendorId":"ab1"},"component":{"customData":{"vendorId":"ab1"},"evse":{"customData":{"vendorId":"ab1"},"id":1,"connectorId":1},"name":"ab1","instance":"ab1"},"variable":{"customData":{"vendorId":"ab1"},"name":"ab1","instance":"ab1"}}],"requestId":1,"monitoringCriteria":["PeriodicMonitoring"]}
+  ],
+  "GetReport": [
+   {"requestId":0},
+   {"customData":{"vendorId":"ab1"},"componentVariable":[{"customData":{"vendorId":"ab1"},"component":{"customData":{"vendorId":"ab1"},"evse":{"customData":{"vendorId":"ab1"},"id":1,"connectorId":1},"name":"ab1","instance":"ab1"},"variable":{"customData":{"vendorId":"ab1"},"name":"ab1","instance":"ab1"}}],"requestId":1,"componentCriteria":["Problem"]}
+  ],
+  "GetTransactionStatus": [
+   {},
+   {"customData":{"vendorId":"ab1"},"transactionId":"ab1"},
+   {"transactionId":"none"}
+  ],
+  "GetVariables": [
+   {"getVariableData":[{"component":{"name":"x"},"variable":{"name":"x"}}]},
+   {"customData":{"vendorId":"ab1"},"getVariableData":[{"customData":{"vendorId":"ab1"},"attributeType":"MaxSet","component":{"customData":{"vendorId":"ab1"},"evse":{"customData":{"vendorId":"ab1"},"id":1,"connectorId":1},"name":"ab1","instance":"ab1"},"variable":{"customData":{"vendorId":"ab1"},"name":"ab1","instance":"ab1"}}]},
+   {"getVariableData":[{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"}},{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"Nope"}},{"component":{"name":"Nope"},"variable":{"name":"X"}},{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"},"attributeType":"Target"}]}
+  ],
+  "InstallCertificate": [
+   {"certificateType":"V2GRootCertificate","certificate":"x"},
+   {"customData":{"vendorId":"ab1"},"certificateType":"ManufacturerRootCertificate","certificate":"ab1"}
+  ],
+  "PublishFirmware": [
+   {"location":"x","checksum":"x","requestId":0},
+   {"customData":{"vendorId":"ab1"},"location":"ab1","retries":1,"checksum":"ab1","requestId":1,"retryInterval":1}
+  ],
+  "RequestStartTransaction": [
+   {"idToken":{"idToken":"x","type":"Central"},"remoteStartId":0},
+   {"customData":{"vendorId":"ab1"},"evseId":1,"groupIdToken":{"customData":{"vendorId":"ab1"},"additionalInfo":[{"customData":{"vendorId":"ab1"},"additionalIdToken":"ab1","type":"ab1"}],"idToken":"ab1","type":"NoAuthorization"},"idToken":{"customData":{"vendorId":"ab1"},"additionalInfo":[{"customData":{"vendorId":"ab1"},"additionalIdToken":"ab1","type":"ab1"}],"idToken":"ab1","type":"NoAuthorization"},"remoteStartId":1,"chargingProfile":{"customData":{"vendorId":"ab1"},"id":1,"stackLevel":1,"chargingProfilePurpose":"TxProfile","chargingProfileKind":"Relative","recurrencyKind":"Weekly","validFrom":"2026-01-01T00:00:00Z","validTo":"2026-01-01T00:00:00Z","chargingSchedule":[{"customData":{"vendorId":"ab1"},"id":1,"startSchedule":"2026-01-01T00:00:00Z","duration":1,"chargingRateUnit":"A","chargingSchedulePeriod":[{"customData":{"vendorId":"ab1"},"startPeriod":1,"limit":1,"numberPhases":1,"phaseToUse":1}],"minChargingRate":1,"salesTariff":{"customData":{"vendorId":"ab1"},"id":1,"salesTariffDescription":"ab1","numEPriceLevels":1,"salesTariffEntry":[{"customData":{"vendorId":"ab1"},"relativeTimeInterval":{"customData":{"vendorId":"ab1"},"start":1,"duration":1},"ePriceLevel":1,"consumptionCost":[{"customData":{"vendorId":"ab1"},"startValue":1,"cost":[{"customData":{"vendorId":"ab1"},"costKind":"RenewableGenerationPercentage","amount":1,"amountMultiplier":1}]}]}]}}],"transactionId":"ab1"}},
+   {"evseId":1,"remoteStartId":12,"idToken":{"idToken":"T1","type":"ISO14443"}},
+   {"evseId":2,"remoteStartId":13,"idToken":{"idToken":"T2","type":"ISO14443"}}
+  ],
+  "RequestStopTransaction": [
+   {"transactionId":"x"},
+   {"customData":{"vendorId":"ab1"},"transactionId":"ab1"},
+   {"transactionId":"nope"}
+  ],
+  "ReserveNow": [
+   {"id":0,"expiryDateTime":"2026-01-01T00:00:00Z","idToken":{"idToken":"x","type":"Central"}},
+   {"customData":{"vendorId":"ab1"},"id":1,"expiryDateTime":"2026-01-01T00:00:00Z","connectorType":"Unknown","idToken":{"customData":{"vendorId":"ab1"},"additionalInfo":[{"customData":{"vendorId":"ab1"},"additionalIdToken":"ab1","type":"ab1"}],"idToken":"ab1","type":"NoAuthorization"},"evseId":1,"groupIdToken":{"customData":{"vendorId":"ab1"},"additionalInfo":[{"customData":{"vendorId":"ab1"},"additionalIdToken":"ab1","type":"ab1"}],"idToken":"ab1","type":"NoAuthorization"}},
+   {"id":1,"expiryDateTime":"2026-01-01T00:00:00Z","idToken":{"idToken":"A","type":"ISO14443"}}
+  ],
+  "Reset": [
+   {"type":"Immediate"},
+   {"customData":{"vendorId":"ab1"},"type":"OnIdle","evseId":1},
+   {"type":"OnIdle"},
+   {"type":"Immediate","evseId":1}
+  ],
+  "SendLocalList": [
+   {"versionNumber":0,"updateType":"Differential"},
+   {"customData":{"vendorId":"ab1"},"localAuthorizationList":[{"customData":{"vendorId":"ab1"},"idToken":{"customData":{"vendorId":"ab1"},"additionalInfo":[{"customData":{"vendorId":"ab1"},"additionalIdToken":"ab1","type":"ab1"}],"idToken":"ab1","type":"NoAuthorization"},"idTokenInfo":{"customData":{"vendorId":"ab1"},"status":"Unknown","cacheExpiryDateTime":"2026-01-01T00:00:00Z","chargingPriority":1,"language1":"ab1","evseId":[1],"groupIdToken":{"customData":{"vendorId":"ab1"},"additionalInfo":[{"customData":{"vendorId":"ab1"},"additionalIdToken":"ab1","type":"ab1"}],"idToken":"ab1","type":"NoAuthorization"},"language2":"ab1","personalMessage":{"customData":{"vendorId":"ab1"},"format":"UTF8","language":"ab1","content":"ab1"}}}],"versionNumber":1,"updateType":"Full"}
+  ],
+  "SetChargingProfile": [
+   {"evseId":0,"chargingProfile":{"id":0,"stackLevel":0,"chargingProfilePurpose":"ChargingStationExternalConstraints","chargingProfileKind":"Absolute","chargingSchedule":[{"id":0,"chargingRateUnit":"W","chargingSchedulePeriod":[{"startPeriod":0,"limit":0}]}]}},
+   {"customData":{"vendorId":"ab1"},"evseId":1,"chargingProfile":{"customData":{"vendorId":"ab1"},"id":1,"stackLevel":1,"chargingProfilePurpose":"TxProfile","chargingProfileKind":"Relative","recurrencyKind":"Weekly","validFrom":"2026-01-01T00:00:00Z","validTo":"2026-01-01T00:00:00Z","chargingSchedule":[{"customData":{"vendorId":"ab1"},"id":1,"startSchedule":"2026-01-01T00:00:00Z","duration":1,"chargingRateUnit":"A","chargingSchedulePeriod":[{"customData":{"vendorId":"ab1"},"startPeriod":1,"limit":1,"numberPhases":1,"phaseToUse":1}],"minChargingRate":1,"salesTariff":{"customData":{"vendorId":"ab1"},"id":1,"salesTariffDescription":"ab1","numEPriceLevels":1,"salesTariffEntry":[{"customData":{"vendorId":"ab1"},"relativeTimeInterval":{"customData":{"vendorId":"ab1"},"start":1,"duration":1},"ePriceLevel":1,"consumptionCost":[{"customData":{"vendorId":"ab1"},"startValue":1,"cost":[{"customData":{"vendorId":"ab1"},"costKind":"RenewableGenerationPercentage","amount":1,"amountMultiplier":1}]}]}]}}],"transactionId":"ab1"}},
+   {"evseId":1,"chargingProfile":{"id":1,"stackLevel":0,"chargingProfilePurpose":"TxDefaultProfile","chargingProfileKind":"Absolute","chargingSchedule":[{"id":1,"chargingRateUnit":"W","chargingSchedulePeriod":[{"startPeriod":0,"limit":1}]}]}}
+  ],
+  "SetDisplayMessage": [
+   {"message":{"id":0,"priority":"AlwaysFront","message":{"format":"ASCII","content":"x"}}},
+   {"customData":{"vendorId":"ab1"},"message":{"customData":{"vendorId":"ab1"},"display":{"customData":{"vendorId":"ab1"},"evse":{"customData":{"vendorId":"ab1"},"id":1,"connectorId":1},"name":"ab1","instance":"ab1"},"id":1,"priority":"NormalCycle","state":"Unavailable","startDateTime":"2026-01-01T00:00:00Z","endDateTime":"2026-01-01T00:00:00Z","transactionId":"ab1","message":{"customData":{"vendorId":"ab1"},"format":"UTF8","language":"ab1","content":"ab1"}}}
+  ],
+  "SetMonitoringBase": [
+   {"monitoringBase":"All"},
+   {"customData":{"vendorId":"ab1"},"monitoringBase":"HardWiredOnly"}
+  ],
+  "SetMonitoringLevel": [
+   {"severity":0},
+   {"customData":{"vendorId":"ab1"},"severity":1}
+  ],
+  "SetNetworkProfile": [
+   {"configurationSlot":0,"connectionData":{"ocppVersion":"OCPP12","ocppTransport":"JSON","ocppCsmsUrl":"x","messageTimeout":0,"securityProfile":0,"ocppInterface":"Wired0"}},
+   {"customData":{"vendorId":"ab1"},"configurationSlot":1,"connectionData":{"customData":{"vendorId":"ab1"},"apn":{"customData":{"vendorId":"ab1"},"apn":"ab1","apnUserName":"ab1","apnPassword":"ab1","simPin":1,"preferredNetwork":"ab1","useOnlyPreferredNetwork":true,"apnAuthentication":"AUTO"},"ocppVersion":"OCPP20","ocppTransport":"SOAP","ocppCsmsUrl":"ab1","messageTimeout":1,"securityProfile":1,"ocppInterface":"Wireless3","vpn":{"customData":{"vendorId":"ab1"},"server":"ab1","user":"ab1","group":"ab1","password":"ab1","key":"ab1","type":"PPTP"}}}
+  ],
+  "SetVariableMonitoring": [
+   {"setMonitoringData":[{"value":0,"type":"UpperThreshold","severity":0,"component":{"name":"x"},"variable":{"name":"x"}}]},
+   {"customData":{"vendorId":"ab1"},"setMonitoringData":[{"customData":{"vendorId":"ab1"},"id":1,"transaction":true,"value":1,"type":"PeriodicClockAligned","severity":1,"component":{"customData":{"vendorId":"ab1"},"evse":{"customData":{"vendorId":"ab1"},"id":1,"connectorId":1},"name":"ab1","instance":"ab1"},"variable":{"customData":{"vendorId":"ab1"},"name":"ab1","instance":"ab1"}}]},
+   {"setMonitoringData":[{"value":1,"type":"Delta","severity":5,"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"}},{"value":1,"type":"Delta","severity":5,"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"Nope"}},{"value":1,"type":"Delta","severity":5,"component":{"name":"Nope"},"variable":{"name":"X"}}]}
+  ],
+  "SetVariables": [
+   {"setVariableData":[{"attributeValue":"x","component":{"name":"x"},"variable":{"name":"x"}}]},
+   {"customData":{"vendorId":"ab1"},"setVariableData":[{"customData":{"vendorId":"ab1"},"attributeType":"MaxSet","attributeValue":"ab1","component":{"customData":{"vendorId":"ab1"},"evse":{"customData":{"vendorId":"ab1"},"id":1,"connectorId":1},"name":"ab1","instance":"ab1"},"variable":{"customData":{"vendorId":"ab1"},"name":"ab1","instance":"ab1"}}]},
+   {"setVariableData":[{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"},"attributeValue":"5"},{"component":{"name":"SecurityCtrlr"},"variable":{"name":"SecurityProfile"},"attributeValue":"3"}]}
+  ],
+  "TriggerMessage": [
+   {"requestedMessage":"BootNotification"},
+   {"customData":{"vendorId":"ab1"},"evse":{"customData":{"vendorId":"ab1"},"id":1,"connectorId":1},"requestedMessage":"PublishFirmwareStatusNotification"},
+   {"requestedMessage":"Heartbeat"},
+   {"requestedMessage":"MeterValues"},
+   {"requestedMessage":"FirmwareStatusNotification"},
+   {"requestedMessage":"StatusNotification"},
+   {"requestedMessage":"SignChargingStationCertificate"}
+  ],
+  "UnlockConnector": [
+   {"evseId":0,"connectorId":0},
+   {"customData":{"vendorId":"ab1"},"evseId":1,"connectorId":1},
+   {"evseId":1,"connectorId":1}
+  ],
+  "UnpublishFirmware": [
+   {"checksum":"x"},
+   {"customData":{"vendorId":"ab1"},"checksum":"ab1"},
+   {"checksum":"0123456789abcdef0123456789abcdef"}
+  ],
+  "UpdateFirmware": [
+   {"requestId":0,"firmware":{"location":"x","retrieveDateTime":"2026-01-01T00:00:00Z"}},
+   {"customData":{"vendorId":"ab1"},"retries":1,"retryInterval":1,"requestId":1,"firmware":{"customData":{"vendorId":"ab1"},"location":"ab1","retrieveDateTime":"2026-01-01T00:00:00Z","installDateTime":"2026-01-01T00:00:00Z","signingCertificate":"ab1","signature":"ab1"}}
+  ]
+ },
+ "2.1": {
+  "AFRRSignal": [
+   {"timestamp":"2026-01-01T00:00:00Z","signal":0},
+   {"timestamp":"2026-01-01T00:00:00Z","signal":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "AdjustPeriodicEventStream": [
+   {"id":0,"params":{}},
+   {"id":1,"params":{"interval":1,"values":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "CancelReservation": [
+   {"reservationId":0},
+   {"reservationId":1,"customData":{"vendorId":"ab1"}},
+   {"reservationId":1}
+  ],
+  "CertificateSigned": [
+   {"certificateChain":"x"},
+   {"certificateChain":"ab1","certificateType":"V2G20Certificate","requestId":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "ChangeAvailability": [
+   {"operationalStatus":"Inoperative"},
+   {"evse":{"id":1,"connectorId":1,"customData":{"vendorId":"ab1"}},"operationalStatus":"Operative","customData":{"vendorId":"ab1"}}
+  ],
+  "ChangeTransactionTariff": [
+   {"tariff":{"tariffId":"x","currency":"x"},"transactionId":"x"},
+   {"tariff":{"tariffId":"ab1","description":[{"format":"QRCODE","language":"ab1","content":"ab1","customData":{"vendorId":"ab1"}}],"currency":"ab1","energy":{"prices":[{"priceKwh":1,"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","minEnergy":1,"maxEnergy":1,"minCurrent":1,"maxCurrent":1,"minPower":1,"maxPower":1,"minTime":1,"maxTime":1,"minChargingTime":1,"maxChargingTime":1,"minIdleTime":1,"maxIdleTime":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"validFrom":"2026-01-01T00:00:00Z","chargingTime":{"prices":[{"priceMinute":1,"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","minEnergy":1,"maxEnergy":1,"minCurrent":1,"maxCurrent":1,"minPower":1,"maxPower":1,"minTime":1,"maxTime":1,"minChargingTime":1,"maxChargingTime":1,"minIdleTime":1,"maxIdleTime":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"idleTime":{"prices":[{"priceMinute":1,"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","minEnergy":1,"maxEnergy":1,"minCurrent":1,"maxCurrent":1,"minPower":1,"maxPower":1,"minTime":1,"maxTime":1,"minChargingTime":1,"maxChargingTime":1,"minIdleTime":1,"maxIdleTime":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"fixedFee":{"prices":[{"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","paymentBrand":"ab1","paymentRecognition":"ab1","customData":{"vendorId":"ab1"}},"priceFixed":1,"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"reservationTime":{"prices":[{"priceMinute":1,"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","minEnergy":1,"maxEnergy":1,"minCurrent":1,"maxCurrent":1,"minPower":1,"maxPower":1,"minTime":1,"maxTime":1,"minChargingTime":1,"maxChargingTime":1,"minIdleTime":1,"maxIdleTime":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"reservationFixed":{"prices":[{"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","paymentBrand":"ab1","paymentRecognition":"ab1","customData":{"vendorId":"ab1"}},"priceFixed":1,"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"minCost":{"exclTax":1,"inclTax":1,"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"maxCost":{"exclTax":1,"inclTax":1,"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}},"transactionId":"ab1","customData":{"vendorId":"ab1"}}
+  ],
+  "ClearCache": [
+   {},
+   {"customData":{"vendorId":"ab1"}}
+  ],
+  "ClearChargingProfile": [
+   {},
+   {"chargingProfileId":1,"chargingProfileCriteria":{"evseId":1,"chargingProfilePurpose":"LocalGeneration","stackLevel":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "ClearDERControl": [
+   {"isDefault":false},
+   {"isDefault":true,"controlType":"WattVar","controlId":"ab1","customData":{"vendorId":"ab1"}}
+  ],
+  "ClearDisplayMessage": [
+   {"id":0},
+   {"id":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "ClearTariffs": [
+   {},
+   {"tariffIds":["ab1"],"evseId":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "ClearVariableMonitoring": [
+   {"id":[0]},
+   {"id":[1],"customData":{"vendorId":"ab1"}},
+   {"id":[4,5]}
+  ],
+  "CostUpdated": [
+   {"totalCost":0,"transactionId":"x"},
+   {"totalCost":1,"transactionId":"ab1","customData":{"vendorId":"ab1"}}
+  ],
+  "CustomerInformation": [
+   {"requestId":0,"report":false,"clear":false},
+   {"customerCertificate":{"hashAlgorithm":"SHA512","issuerNameHash":"ab1","issuerKeyHash":"ab1","serialNumber":"ab1","customData":{"vendorId":"ab1"}},"idToken":{"additionalInfo":[{"additionalIdToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}}],"idToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}},"requestId":1,"report":true,"clear":true,"customerIdentifier":"ab1","customData":{"vendorId":"ab1"}}
+  ],
+  "DataTransfer": [
+   {"vendorId":"x"},
+   {"messageId":"ab1","data":{"a":[1,"b",true,null]},"vendorId":"ab1","customData":{"vendorId":"ab1"}}
+  ],
+  "DeleteCertificate": [
+   {"certificateHashData":{"hashAlgorithm":"SHA256","issuerNameHash":"x","issuerKeyHash":"x","serialNumber":"x"}},
+   {"certificateHashData":{"hashAlgorithm":"SHA512","issuerNameHash":"ab1","issuerKeyHash":"ab1","serialNumber":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "GetBaseReport": [
+   {"requestId":0,"reportBase":"ConfigurationInventory"},
+   {"requestId":1,"reportBase":"SummaryInventory","customData":{"vendorId":"ab1"}},
+   {"requestId":3,"reportBase":"FullInventory"}
+  ],
+  "GetChargingProfiles": [
+   {"requestId":0,"chargingProfile":{}},
+   {"requestId":1,"evseId":1,"chargingProfile":{"chargingProfilePurpose":"LocalGeneration","stackLevel":1,"chargingProfileId":[1],"chargingLimitSource":["ab1"],"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "GetCompositeSchedule": [
+   {"duration":0,"evseId":0},
+   {"duration":1,"chargingRateUnit":"A","evseId":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "GetDERControl": [
+   {"requestId":0},
+   {"requestId":1,"isDefault":true,"controlType":"WattVar","controlId":"ab1","customData":{"vendorId":"ab1"}}
+  ],
+  "GetDisplayMessages": [
+   {"requestId":0},
+   {"id":[1],"requestId":1,"priority":"NormalCycle","state":"Discharging","customData":{"vendorId":"ab1"}}
+  ],
+  "GetInstalledCertificateIds": [
+   {},
+   {"certificateType":["OEMRootCertificate"],"customData":{"vendorId":"ab1"}}
+  ],
+  "GetLocalListVersion": [
+   {},
+   {"customData":{"vendorId":"ab1"}}
+  ],
+  "GetLog": [
+   {"log":{"remoteLocation":"x"},"logType":"DiagnosticsLog","requestId":0},
+   {"log":{"remoteLocation":"ab1","oldestTimestamp":"2026-01-01T00:00:00Z","latestTimestamp":"2026-01-01T00:00:00Z","customData":{"vendorId":"ab1"}},"logType":"DataCollectorLog","requestId":1,"retries":1,"retryInterval":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "GetMonitoringReport": [
+   {"requestId":0},
+   {"componentVariable":[{"component":{"evse":{"id":1,"connectorId":1,"customData":{"vendorId":"ab1"}},"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"variable":{"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"requestId":1,"monitoringCriteria":["PeriodicMonitoring"],"customData":{"vendorId":"ab1"}}
+  ],
+  "GetPeriodicEventStream": [
+   {},
+   {"customData":{"vendorId":"ab1"}}
+  ],
+  "GetReport": [
+   {"requestId":0},
+   {"componentVariable":[{"component":{"evse":{"id":1,"connectorId":1,"customData":{"vendorId":"ab1"}},"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"variable":{"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"requestId":1,"componentCriteria":["Problem"],"customData":{"vendorId":"ab1"}}
+  ],
+  "GetTariffs": [
+   {"evseId":0},
+   {"evseId":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "GetTransactionStatus": [
+   {},
+   {"transactionId":"ab1","customData":{"vendorId":"ab1"}},
+   {"transactionId":"none"}
+  ],
+  "GetVariables": [
+   {"getVariableData":[{"component":{"name":"x"},"variable":{"name":"x"}}]},
+   {"getVariableData":[{"attributeType":"MaxSet","component":{"evse":{"id":1,"connectorId":1,"customData":{"vendorId":"ab1"}},"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"variable":{"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},
+   {"getVariableData":[{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"}},{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"Nope"}},{"component":{"name":"Nope"},"variable":{"name":"X"}},{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"},"attributeType":"Target"}]}
+  ],
+  "InstallCertificate": [
+   {"certificateType":"V2GRootCertificate","certificate":"x"},
+   {"certificateType":"OEMRootCertificate","certificate":"ab1","customData":{"vendorId":"ab1"}}
+  ],
+  "NotifyAllowedEnergyTransfer": [
+   {"transactionId":"x","allowedEnergyTransfer":["AC_single_phase"]},
+   {"transactionId":"ab1","allowedEnergyTransfer":["WPT"],"customData":{"vendorId":"ab1"}}
+  ],
+  "NotifyWebPaymentStarted": [
+   {"evseId":0,"timeout":0},
+   {"evseId":1,"timeout":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "PublishFirmware": [
+   {"location":"x","checksum":"x","requestId":0},
+   {"location":"ab1","retries":1,"checksum":"ab1","requestId":1,"retryInterval":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "RequestBatterySwap": [
+   {"idToken":{"idToken":"x","type":"x"},"requestId":0},
+   {"idToken":{"additionalInfo":[{"additionalIdToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}}],"idToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}},"requestId":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "RequestStartTransaction": [
+   {"idToken":{"idToken":"x","type":"x"},"remoteStartId":0},
+   {"evseId":1,"groupIdToken":{"additionalInfo":[{"additionalIdToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}}],"idToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}},"idToken":{"additionalInfo":[{"additionalIdToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}}],"idToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}},"remoteStartId":1,"chargingProfile":{"id":1,"stackLevel":1,"chargingProfilePurpose":"LocalGeneration","chargingProfileKind":"Dynamic","recurrencyKind":"Weekly","validFrom":"2026-01-01T00:00:00Z","validTo":"2026-01-01T00:00:00Z","transactionId":"ab1","maxOfflineDuration":1,"chargingSchedule":[{"id":1,"limitAtSoC":{"soc":1,"limit":1,"customData":{"vendorId":"ab1"}},"startSchedule":"2026-01-01T00:00:00Z","duration":1,"chargingRateUnit":"A","minChargingRate":1,"powerTolerance":1,"signatureId":1,"digestValue":"ab1","useLocalTime":true,"chargingSchedulePeriod":[{"startPeriod":1,"limit":1,"limit_L2":1,"limit_L3":1,"numberPhases":1,"phaseToUse":1,"dischargeLimit":0.0,"dischargeLimit_L2":0.0,"dischargeLimit_L3":0.0,"setpoint":1,"setpoint_L2":1,"setpoint_L3":1,"setpointReactive":1,"setpointReactive_L2":1,"setpointReactive_L3":1,"preconditioningRequest":true,"evseSleep":true,"v2xBaseline":1,"operationMode":"LocalLoadBalancing","v2xFreqWattCurve":[{"frequency":1,"power":1,"customData":{"vendorId":"ab1"}}],"v2xSignalWattCurve":[{"signal":1,"power":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}}],"randomizedDelay":1,"salesTariff":{"id":1,"salesTariffDescription":"ab1","numEPriceLevels":1,"salesTariffEntry":[{"relativeTimeInterval":{"start":1,"duration":1,"customData":{"vendorId":"ab1"}},"ePriceLevel":1,"consumptionCost":[{"startValue":1,"cost":[{"costKind":"RenewableGenerationPercentage","amount":1,"amountMultiplier":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"absolutePriceSchedule":{"timeAnchor":"2026-01-01T00:00:00Z","priceScheduleID":1,"priceScheduleDescription":"ab1","currency":"ab1","language":"ab1","priceAlgorithm":"ab1","minimumCost":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"maximumCost":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"priceRuleStacks":[{"duration":1,"priceRule":[{"parkingFeePeriod":1,"carbonDioxideEmission":1,"renewableGenerationPercentage":1,"energyFee":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"parkingFee":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"powerRangeStart":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}}],"taxRules":[{"taxRuleID":1,"taxRuleName":"ab1","taxIncludedInPrice":true,"appliesToEnergyFee":true,"appliesToParkingFee":true,"appliesToOverstayFee":true,"appliesToMinimumMaximumCost":true,"taxRate":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"overstayRuleList":{"overstayPowerThreshold":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"overstayRule":[{"overstayFee":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"overstayRuleDescription":"ab1","startTime":1,"overstayFeePeriod":1,"customData":{"vendorId":"ab1"}}],"overstayTimeThreshold":1,"customData":{"vendorId":"ab1"}},"additionalSelectedServices":[{"serviceFee":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"serviceName":"ab1","customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"priceLevelSchedule":{"priceLevelScheduleEntries":[{"duration":1,"priceLevel":1,"customData":{"vendorId":"ab1"}}],"timeAnchor":"2026-01-01T00:00:00Z","priceScheduleId":1,"priceScheduleDescription":"ab1","numberOfPriceLevels":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"invalidAfterOfflineDuration":true,"dynUpdateInterval":1,"dynUpdateTime":"2026-01-01T00:00:00Z","priceScheduleSignature":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}},
+   {"evseId":1,"remoteStartId":12,"idToken":{"idToken":"T1","type":"ISO14443"}},
+   {"evseId":2,"remoteStartId":13,"idToken":{"idToken":"T2","type":"ISO14443"}}
+  ],
+  "RequestStopTransaction": [
+   {"transactionId":"x"},
+   {"transactionId":"ab1","customData":{"vendorId":"ab1"}},
+   {"transactionId":"nope"}
+  ],
+  "ReserveNow": [
+   {"id":0,"expiryDateTime":"2026-01-01T00:00:00Z","idToken":{"idToken":"x","type":"x"}},
+   {"id":1,"expiryDateTime":"2026-01-01T00:00:00Z","connectorType":"ab1","idToken":{"additionalInfo":[{"additionalIdToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}}],"idToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}},"evseId":1,"groupIdToken":{"additionalInfo":[{"additionalIdToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}}],"idToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}},
+   {"id":1,"expiryDateTime":"2026-01-01T00:00:00Z","idToken":{"idToken":"A","type":"ISO14443"}}
+  ],
+  "Reset": [
+   {"type":"Immediate"},
+   {"type":"ImmediateAndResume","evseId":1,"customData":{"vendorId":"ab1"}},
+   {"type":"OnIdle"},
+   {"type":"Immediate","evseId":1}
+  ],
+  "SendLocalList": [
+   {"versionNumber":0,"updateType":"Differential"},
+   {"localAuthorizationList":[{"idToken":{"additionalInfo":[{"additionalIdToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}}],"idToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}},"idTokenInfo":{"status":"Unknown","cacheExpiryDateTime":"2026-01-01T00:00:00Z","chargingPriority":1,"groupIdToken":{"additionalInfo":[{"additionalIdToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}}],"idToken":"ab1","type":"ab1","customData":{"vendorId":"ab1"}},"language1":"ab1","language2":"ab1","evseId":[1],"personalMessage":{"format":"QRCODE","language":"ab1","content":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"versionNumber":1,"updateType":"Full","customData":{"vendorId":"ab1"}}
+  ],
+  "SetChargingProfile": [
+   {"evseId":0,"chargingProfile":{"id":0,"stackLevel":0,"chargingProfilePurpose":"ChargingStationExternalConstraints","chargingProfileKind":"Absolute","chargingSchedule":[{"id":0,"chargingRateUnit":"W","chargingSchedulePeriod":[{"startPeriod":0}]}]}},
+   {"evseId":1,"chargingProfile":{"id":1,"stackLevel":1,"chargingProfilePurpose":"LocalGeneration","chargingProfileKind":"Dynamic","recurrencyKind":"Weekly","validFrom":"2026-01-01T00:00:00Z","validTo":"2026-01-01T00:00:00Z","transactionId":"ab1","maxOfflineDuration":1,"chargingSchedule":[{"id":1,"limitAtSoC":{"soc":1,"limit":1,"customData":{"vendorId":"ab1"}},"startSchedule":"2026-01-01T00:00:00Z","duration":1,"chargingRateUnit":"A","minChargingRate":1,"powerTolerance":1,"signatureId":1,"digestValue":"ab1","useLocalTime":true,"chargingSchedulePeriod":[{"startPeriod":1,"limit":1,"limit_L2":1,"limit_L3":1,"numberPhases":1,"phaseToUse":1,"dischargeLimit":0.0,"dischargeLimit_L2":0.0,"dischargeLimit_L3":0.0,"setpoint":1,"setpoint_L2":1,"setpoint_L3":1,"setpointReactive":1,"setpointReactive_L2":1,"setpointReactive_L3":1,"preconditioningRequest":true,"evseSleep":true,"v2xBaseline":1,"operationMode":"LocalLoadBalancing","v2xFreqWattCurve":[{"frequency":1,"power":1,"customData":{"vendorId":"ab1"}}],"v2xSignalWattCurve":[{"signal":1,"power":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}}],"randomizedDelay":1,"salesTariff":{"id":1,"salesTariffDescription":"ab1","numEPriceLevels":1,"salesTariffEntry":[{"relativeTimeInterval":{"start":1,"duration":1,"customData":{"vendorId":"ab1"}},"ePriceLevel":1,"consumptionCost":[{"startValue":1,"cost":[{"costKind":"RenewableGenerationPercentage","amount":1,"amountMultiplier":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"absolutePriceSchedule":{"timeAnchor":"2026-01-01T00:00:00Z","priceScheduleID":1,"priceScheduleDescription":"ab1","currency":"ab1","language":"ab1","priceAlgorithm":"ab1","minimumCost":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"maximumCost":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"priceRuleStacks":[{"duration":1,"priceRule":[{"parkingFeePeriod":1,"carbonDioxideEmission":1,"renewableGenerationPercentage":1,"energyFee":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"parkingFee":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"powerRangeStart":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}}],"taxRules":[{"taxRuleID":1,"taxRuleName":"ab1","taxIncludedInPrice":true,"appliesToEnergyFee":true,"appliesToParkingFee":true,"appliesToOverstayFee":true,"appliesToMinimumMaximumCost":true,"taxRate":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"overstayRuleList":{"overstayPowerThreshold":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"overstayRule":[{"overstayFee":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"overstayRuleDescription":"ab1","startTime":1,"overstayFeePeriod":1,"customData":{"vendorId":"ab1"}}],"overstayTimeThreshold":1,"customData":{"vendorId":"ab1"}},"additionalSelectedServices":[{"serviceFee":{"exponent":1,"value":1,"customData":{"vendorId":"ab1"}},"serviceName":"ab1","customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"priceLevelSchedule":{"priceLevelScheduleEntries":[{"duration":1,"priceLevel":1,"customData":{"vendorId":"ab1"}}],"timeAnchor":"2026-01-01T00:00:00Z","priceScheduleId":1,"priceScheduleDescription":"ab1","numberOfPriceLevels":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"invalidAfterOfflineDuration":true,"dynUpdateInterval":1,"dynUpdateTime":"2026-01-01T00:00:00Z","priceScheduleSignature":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}},
+   {"evseId":1,"chargingProfile":{"id":1,"stackLevel":0,"chargingProfilePurpose":"TxDefaultProfile","chargingProfileKind":"Absolute","chargingSchedule":[{"id":1,"chargingRateUnit":"W","chargingSchedulePeriod":[{"startPeriod":0,"limit":1}]}]}}
+  ],
+  "SetDERControl": [
+   {"isDefault":false,"controlId":"x","controlType":"EnterService"},
+   {"isDefault":true,"controlId":"ab1","controlType":"WattVar","curve":{"curveData":[{"x":1,"y":1,"customData":{"vendorId":"ab1"}}],"hysteresis":{"hysteresisHigh":1,"hysteresisLow":1,"hysteresisDelay":1,"hysteresisGradient":1,"customData":{"vendorId":"ab1"}},"priority":1,"reactivePowerParams":{"vRef":1,"autonomousVRefEnable":true,"autonomousVRefTimeConstant":1,"customData":{"vendorId":"ab1"}},"voltageParams":{"hv10MinMeanValue":1,"hv10MinMeanTripDelay":1,"powerDuringCessation":"Reactive","customData":{"vendorId":"ab1"}},"yUnit":"PctEffectiveV","responseTime":1,"startTime":"2026-01-01T00:00:00Z","duration":1,"customData":{"vendorId":"ab1"}},"enterService":{"priority":1,"highVoltage":1,"lowVoltage":1,"highFreq":1,"lowFreq":1,"delay":1,"randomDelay":1,"rampRate":1,"customData":{"vendorId":"ab1"}},"fixedPFAbsorb":{"priority":1,"displacement":1,"excitation":true,"startTime":"2026-01-01T00:00:00Z","duration":1,"customData":{"vendorId":"ab1"}},"fixedPFInject":{"priority":1,"displacement":1,"excitation":true,"startTime":"2026-01-01T00:00:00Z","duration":1,"customData":{"vendorId":"ab1"}},"fixedVar":{"priority":1,"setpoint":1,"unit":"PctEffectiveV","startTime":"2026-01-01T00:00:00Z","duration":1,"customData":{"vendorId":"ab1"}},"freqDroop":{"priority":1,"overFreq":1,"underFreq":1,"overDroop":1,"underDroop":1,"responseTime":1,"startTime":"2026-01-01T00:00:00Z","duration":1,"customData":{"vendorId":"ab1"}},"gradient":{"priority":1,"gradient":1,"softGradient":1,"customData":{"vendorId":"ab1"}},"limitMaxDischarge":{"priority":1,"pctMaxDischargePower":1,"powerMonitoringMustTrip":{"curveData":[{"x":1,"y":1,"customData":{"vendorId":"ab1"}}],"hysteresis":{"hysteresisHigh":1,"hysteresisLow":1,"hysteresisDelay":1,"hysteresisGradient":1,"customData":{"vendorId":"ab1"}},"priority":1,"reactivePowerParams":{"vRef":1,"autonomousVRefEnable":true,"autonomousVRefTimeConstant":1,"customData":{"vendorId":"ab1"}},"voltageParams":{"hv10MinMeanValue":1,"hv10MinMeanTripDelay":1,"powerDuringCessation":"Reactive","customData":{"vendorId":"ab1"}},"yUnit":"PctEffectiveV","responseTime":1,"startTime":"2026-01-01T00:00:00Z","duration":1,"customData":{"vendorId":"ab1"}},"startTime":"2026-01-01T00:00:00Z","duration":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "SetDefaultTariff": [
+   {"evseId":0,"tariff":{"tariffId":"x","currency":"x"}},
+   {"evseId":1,"tariff":{"tariffId":"ab1","description":[{"format":"QRCODE","language":"ab1","content":"ab1","customData":{"vendorId":"ab1"}}],"currency":"ab1","energy":{"prices":[{"priceKwh":1,"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","minEnergy":1,"maxEnergy":1,"minCurrent":1,"maxCurrent":1,"minPower":1,"maxPower":1,"minTime":1,"maxTime":1,"minChargingTime":1,"maxChargingTime":1,"minIdleTime":1,"maxIdleTime":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"validFrom":"2026-01-01T00:00:00Z","chargingTime":{"prices":[{"priceMinute":1,"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","minEnergy":1,"maxEnergy":1,"minCurrent":1,"maxCurrent":1,"minPower":1,"maxPower":1,"minTime":1,"maxTime":1,"minChargingTime":1,"maxChargingTime":1,"minIdleTime":1,"maxIdleTime":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"idleTime":{"prices":[{"priceMinute":1,"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","minEnergy":1,"maxEnergy":1,"minCurrent":1,"maxCurrent":1,"minPower":1,"maxPower":1,"minTime":1,"maxTime":1,"minChargingTime":1,"maxChargingTime":1,"minIdleTime":1,"maxIdleTime":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"fixedFee":{"prices":[{"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","paymentBrand":"ab1","paymentRecognition":"ab1","customData":{"vendorId":"ab1"}},"priceFixed":1,"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"reservationTime":{"prices":[{"priceMinute":1,"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","minEnergy":1,"maxEnergy":1,"minCurrent":1,"maxCurrent":1,"minPower":1,"maxPower":1,"minTime":1,"maxTime":1,"minChargingTime":1,"maxChargingTime":1,"minIdleTime":1,"maxIdleTime":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"reservationFixed":{"prices":[{"conditions":{"startTimeOfDay":"ab1","endTimeOfDay":"ab1","dayOfWeek":["Sunday"],"validFromDate":"ab1","validToDate":"ab1","evseKind":"DC","paymentBrand":"ab1","paymentRecognition":"ab1","customData":{"vendorId":"ab1"}},"priceFixed":1,"customData":{"vendorId":"ab1"}}],"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"minCost":{"exclTax":1,"inclTax":1,"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"maxCost":{"exclTax":1,"inclTax":1,"taxRates":[{"type":"ab1","tax":1,"stack":1,"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "SetDisplayMessage": [
+   {"message":{"id":0,"priority":"AlwaysFront","message":{"format":"ASCII","content":"x"}}},
+   {"message":{"display":{"evse":{"id":1,"connectorId":1,"customData":{"vendorId":"ab1"}},"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"id":1,"priority":"NormalCycle","state":"Discharging","startDateTime":"2026-01-01T00:00:00Z","endDateTime":"2026-01-01T00:00:00Z","transactionId":"ab1","message":{"format":"QRCODE","language":"ab1","content":"ab1","customData":{"vendorId":"ab1"}},"messageExtra":[{"format":"QRCODE","language":"ab1","content":"ab1","customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "SetMonitoringBase": [
+   {"monitoringBase":"All"},
+   {"monitoringBase":"HardWiredOnly","customData":{"vendorId":"ab1"}}
+  ],
+  "SetMonitoringLevel": [
+   {"severity":0},
+   {"severity":1,"customData":{"vendorId":"ab1"}}
+  ],
+  "SetNetworkProfile": [
+   {"configurationSlot":0,"connectionData":{"ocppInterface":"Wired0","ocppTransport":"SOAP","messageTimeout":0,"ocppCsmsUrl":"x","securityProfile":0}},
+   {"configurationSlot":1,"connectionData":{"apn":{"apn":"ab1","apnUserName":"ab1","apnPassword":"ab1","simPin":1,"preferredNetwork":"ab1","useOnlyPreferredNetwork":true,"apnAuthentication":"AUTO","customData":{"vendorId":"ab1"}},"ocppVersion":"OCPP21","ocppInterface":"Any","ocppTransport":"JSON","messageTimeout":1,"ocppCsmsUrl":"ab1","securityProfile":1,"identity":"ab1","basicAuthPassword":"ab1","vpn":{"server":"ab1","user":"ab1","group":"ab1","password":"ab1","key":"ab1","type":"PPTP","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "SetVariableMonitoring": [
+   {"setMonitoringData":[{"value":0,"type":"UpperThreshold","severity":0,"component":{"name":"x"},"variable":{"name":"x"}}]},
+   {"setMonitoringData":[{"id":1,"periodicEventStream":{"interval":1,"values":1,"customData":{"vendorId":"ab1"}},"transaction":true,"value":1,"type":"TargetDeltaRelative","severity":1,"component":{"evse":{"id":1,"connectorId":1,"customData":{"vendorId":"ab1"}},"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"variable":{"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},
+   {"setMonitoringData":[{"value":1,"type":"Delta","severity":5,"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"}},{"value":1,"type":"Delta","severity":5,"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"Nope"}},{"value":1,"type":"Delta","severity":5,"component":{"name":"Nope"},"variable":{"name":"X"}}]}
+  ],
+  "SetVariables": [
+   {"setVariableData":[{"attributeValue":"x","component":{"name":"x"},"variable":{"name":"x"}}]},
+   {"setVariableData":[{"attributeType":"MaxSet","attributeValue":"ab1","component":{"evse":{"id":1,"connectorId":1,"customData":{"vendorId":"ab1"}},"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"variable":{"name":"ab1","instance":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}],"customData":{"vendorId":"ab1"}},
+   {"setVariableData":[{"component":{"name":"OCPPCommCtrlr"},"variable":{"name":"HeartbeatInterval"},"attributeValue":"5"},{"component":{"name":"SecurityCtrlr"},"variable":{"name":"SecurityProfile"},"attributeValue":"3"}]}
+  ],
+  "TriggerMessage": [
+   {"requestedMessage":"BootNotification"},
+   {"evse":{"id":1,"connectorId":1,"customData":{"vendorId":"ab1"}},"requestedMessage":"CustomTrigger","customTrigger":"ab1","customData":{"vendorId":"ab1"}},
+   {"requestedMessage":"Heartbeat"},
+   {"requestedMessage":"MeterValues"},
+   {"requestedMessage":"FirmwareStatusNotification"},
+   {"requestedMessage":"StatusNotification"},
+   {"requestedMessage":"SignChargingStationCertificate"}
+  ],
+  "UnlockConnector": [
+   {"evseId":0,"connectorId":0},
+   {"evseId":1,"connectorId":1,"customData":{"vendorId":"ab1"}},
+   {"evseId":1,"connectorId":1}
+  ],
+  "UnpublishFirmware": [
+   {"checksum":"x"},
+   {"checksum":"ab1","customData":{"vendorId":"ab1"}},
+   {"checksum":"0123456789abcdef0123456789abcdef"}
+  ],
+  "UpdateDynamicSchedule": [
+   {"chargingProfileId":0,"scheduleUpdate":{}},
+   {"chargingProfileId":1,"scheduleUpdate":{"limit":1,"limit_L2":1,"limit_L3":1,"dischargeLimit":0.0,"dischargeLimit_L2":0.0,"dischargeLimit_L3":0.0,"setpoint":1,"setpoint_L2":1,"setpoint_L3":1,"setpointReactive":1,"setpointReactive_L2":1,"setpointReactive_L3":1,"customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "UpdateFirmware": [
+   {"requestId":0,"firmware":{"location":"x","retrieveDateTime":"2026-01-01T00:00:00Z"}},
+   {"retries":1,"retryInterval":1,"requestId":1,"firmware":{"location":"ab1","retrieveDateTime":"2026-01-01T00:00:00Z","installDateTime":"2026-01-01T00:00:00Z","signingCertificate":"ab1","signature":"ab1","customData":{"vendorId":"ab1"}},"customData":{"vendorId":"ab1"}}
+  ],
+  "UsePriorityCharging": [
+   {"transactionId":"x","activate":false},
+   {"transactionId":"ab1","activate":true,"customData":{"vendorId":"ab1"}}
+  ]
+ }
+}

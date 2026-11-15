@@ -15,9 +15,9 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -29,6 +29,7 @@ import (
 	"github.com/otfabric/ocppctl/internal/format"
 	"github.com/otfabric/ocppctl/internal/ocpperr"
 	"github.com/otfabric/ocppctl/internal/ocppx"
+	"github.com/otfabric/ocppctl/internal/readlimit"
 )
 
 // PasswordEnv holds the HTTP Basic password when --password-file is not given. It is read
@@ -46,7 +47,8 @@ type Target struct {
 	TLSServerName     string   `flag:"tls-server-name" env:"OCPPCTL_TLS_SERVER_NAME" desc:"Name to verify the CSMS certificate against (default: the URL host)"`
 	InsecureTransport bool     `flag:"insecure-transport" env:"OCPPCTL_INSECURE_TRANSPORT" desc:"Allow ws:// (security profiles 0 and 1): no encryption"`
 	Compression       bool     `flag:"compression" env:"OCPPCTL_COMPRESSION" desc:"Offer permessage-deflate compression"`
-	Headers           []string `flag:"header" desc:"Extra handshake header NAME=VALUE (repeatable)"`
+	Headers           []string `flag:"header" desc:"Extra handshake header NAME=VALUE (repeatable); a value on the command line is visible to other local users, so give tokens with --header-file"`
+	HeaderFile        string   `flag:"header-file" env:"OCPPCTL_HEADER_FILE" desc:"File of NAME=VALUE lines: extra handshake headers, such as a token, kept off the command line"`
 	Timeout           string   `flag:"timeout" env:"OCPPCTL_TIMEOUT" desc:"Response timeout of a CALL"`
 	ConnectTimeout    string   `flag:"connect-timeout" env:"OCPPCTL_CONNECT_TIMEOUT" desc:"Dial, TLS and WebSocket handshake timeout"`
 }
@@ -107,6 +109,11 @@ func (t Target) Parse() (*Parsed, error) {
 	if p.Password, err = password(t.PasswordFile); err != nil {
 		return nil, err
 	}
+	if t.HeaderFile != "" {
+		if p.Headers, err = headerFile(t.HeaderFile); err != nil {
+			return nil, err
+		}
+	}
 	for _, h := range t.Headers {
 		name, value, ok := strings.Cut(h, "=")
 		if !ok || strings.TrimSpace(name) == "" {
@@ -163,13 +170,53 @@ func duration(flag, s string) (time.Duration, error) {
 
 func password(file string) (string, error) {
 	if file != "" {
-		b, err := os.ReadFile(filepath.Clean(file))
+		b, err := readSecret("--password-file", file)
 		if err != nil {
-			return "", errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("--password-file: %v", err), err)
+			return "", err
 		}
 		return strings.TrimRight(string(b), "\r\n"), nil
 	}
 	return os.Getenv(PasswordEnv), nil
+}
+
+// readSecret reads a file of flag that holds a secret, at most readlimit.Secret bytes. No
+// error repeats its content.
+func readSecret(flag, file string) ([]byte, error) {
+	b, err := readlimit.File(file, readlimit.Secret)
+	if tl, ok := errors.AsType[*readlimit.TooLargeError](err); ok {
+		return nil, errs.InvalidInput(errs.CodeInputDecodeFailed, fmt.Sprintf("%s %s: %v", flag, file, tl), err)
+	}
+	if err != nil {
+		return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("%s: %v", flag, err), err)
+	}
+	return b, nil
+}
+
+// headerFile reads the NAME=VALUE lines of --header-file; blank lines and # comments are
+// skipped, and a UTF-8 byte order mark, as some editors write, is not part of the first
+// name. A malformed line is reported by its number, never by its content: it may hold a
+// token.
+func headerFile(file string) ([][2]string, error) {
+	b, err := readSecret("--header-file", file)
+	if err != nil {
+		return nil, err
+	}
+	var out [][2]string
+	n := 0
+	for line := range strings.SplitSeq(strings.TrimPrefix(string(b), "\uFEFF"), "\n") {
+		n++
+		line = strings.TrimRight(line, "\r")
+		if trimmed := strings.TrimSpace(line); trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		name, value, ok := strings.Cut(line, "=")
+		if !ok || strings.TrimSpace(name) == "" {
+			return nil, errs.InvalidInput(errs.CodeInputDecodeFailed,
+				fmt.Sprintf("--header-file %s line %d: want NAME=VALUE (the line is not shown)", file, n), nil)
+		}
+		out = append(out, [2]string{strings.TrimSpace(name), value})
+	}
+	return out, nil
 }
 
 func tlsConfig(t Target) (*tls.Config, error) {
@@ -198,41 +245,77 @@ func tlsConfig(t Target) (*tls.Config, error) {
 	return cfg, nil
 }
 
-// Handshake is what the WebSocket handshake negotiated, as the HTTP response showed it.
+// Handshake is what the WebSocket handshake negotiated.
 type Handshake struct {
 	Status      int
 	Subprotocol string
-	Extensions  string
+	Compression bool
 	TLS         *tls.ConnectionState
 	Duration    time.Duration
 }
 
 // Compressed reports whether permessage-deflate was negotiated.
-func (h *Handshake) Compressed() bool { return strings.Contains(h.Extensions, "permessage-deflate") }
+func (h *Handshake) Compressed() bool { return h.Compression }
 
-// recorder is the HTTP client's transport: it records the handshake response.
+// recorder records the handshake without wrapping the HTTP client's transport: go-ocpp
+// bounds the closing handshake of a connection, and keeps Dial within its context, only
+// when that transport is an *http.Transport. The TLS state and the duration come from an
+// httptrace.ClientTrace on the context of Connect, the compression from go-ocpp's
+// Metrics.OnConnect, the subprotocol from the version the client negotiated.
 type recorder struct {
-	base http.RoundTripper
-	mu   sync.Mutex
-	last Handshake
+	ocpp.NopMetrics
+	mu          sync.Mutex
+	start       time.Time
+	took        time.Duration
+	tls         *tls.ConnectionState
+	compression bool
 }
 
-func (r *recorder) RoundTrip(req *http.Request) (*http.Response, error) {
-	start := time.Now()
-	resp, err := r.base.RoundTrip(req)
-	if resp != nil {
-		r.mu.Lock()
-		r.last = Handshake{Status: resp.StatusCode, Subprotocol: resp.Header.Get("Sec-WebSocket-Protocol"),
-			Extensions: resp.Header.Get("Sec-WebSocket-Extensions"), TLS: resp.TLS, Duration: time.Since(start)}
-		r.mu.Unlock()
-	}
-	return resp, err
+// OnConnect implements ocpp.Metrics: it is called before Connect returns.
+func (r *recorder) OnConnect(info ocpp.ConnInfo) {
+	r.mu.Lock()
+	r.compression = info.Compression
+	r.mu.Unlock()
 }
 
-func (r *recorder) handshake() Handshake {
+// trace returns ctx with a trace of the handshake requests; the last request counts, as
+// for a redirect.
+func (r *recorder) trace(ctx context.Context) context.Context {
+	return httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
+		GetConn: func(string) {
+			r.mu.Lock()
+			r.start, r.took, r.tls = time.Now(), 0, nil
+			r.mu.Unlock()
+		},
+		GotConn: func(info httptrace.GotConnInfo) {
+			tc, ok := info.Conn.(*tls.Conn)
+			if !ok {
+				return
+			}
+			st := tc.ConnectionState()
+			r.mu.Lock()
+			r.tls = &st
+			r.mu.Unlock()
+		},
+		GotFirstResponseByte: func() {
+			r.mu.Lock()
+			r.took = time.Since(r.start)
+			r.mu.Unlock()
+		},
+	})
+}
+
+func (r *recorder) handshake(v ocpp.Version) Handshake {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.last
+	return Handshake{Status: http.StatusSwitchingProtocols, Subprotocol: v.Subprotocol(), Compression: r.compression,
+		TLS: r.tls, Duration: r.took}
+}
+
+// httpClient is the HTTP client of the handshake: a plain *http.Transport, so that go-ocpp
+// can bound the connection's closing handshake.
+func httpClient(p *Parsed) *http.Client {
+	return &http.Client{Transport: &http.Transport{TLSClientConfig: p.TLS, Proxy: http.ProxyFromEnvironment, ForceAttemptHTTP2: false}}
 }
 
 // Options are what a command adds to a connection.
@@ -256,12 +339,13 @@ type Conn struct {
 
 // New builds the client without connecting.
 func New(p *Parsed, o Options) (*Conn, error) {
-	rec := &recorder{base: &http.Transport{TLSClientConfig: p.TLS, Proxy: http.ProxyFromEnvironment, ForceAttemptHTTP2: false}}
+	rec := &recorder{}
 	opts := []client.Option{
 		client.WithVersions(p.Versions...),
-		client.WithHTTPClient(&http.Client{Transport: rec}),
+		client.WithHTTPClient(httpClient(p)),
 		client.WithHandshakeTimeout(p.ConnectTimeout),
 		client.WithResponseTimeout(p.Timeout),
+		client.WithMetrics(rec),
 	}
 	if p.Insecure {
 		opts = append(opts, client.WithInsecureTransport())
@@ -299,7 +383,7 @@ func Dial(ctx context.Context, p *Parsed, o Options) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	cctx, cancel := context.WithTimeout(ctx, p.ConnectTimeout)
+	cctx, cancel := context.WithTimeout(c.rec.trace(ctx), p.ConnectTimeout)
 	defer cancel()
 	if err := c.Connect(cctx); err != nil {
 		_ = c.Close()
@@ -308,7 +392,7 @@ func Dial(ctx context.Context, p *Parsed, o Options) (*Conn, error) {
 		}
 		return nil, ocpperr.Wrap(err, "", false)
 	}
-	c.Handshake = c.rec.handshake()
+	c.Handshake = c.rec.handshake(c.Version())
 	return c, nil
 }
 
@@ -351,11 +435,16 @@ func ReadPayload(arg string, stdin io.Reader) (json.RawMessage, error) {
 	case arg == "":
 		return json.RawMessage(`{}`), nil
 	case arg == "-":
-		b, err = io.ReadAll(stdin)
+		b, err = readlimit.Read(stdin, readlimit.Payload)
 	case strings.HasPrefix(arg, "@"):
-		b, err = os.ReadFile(arg[1:])
+		b, err = readlimit.File(arg[1:], readlimit.Payload)
 	default:
 		b = []byte(arg)
+	}
+	if tl, ok := errors.AsType[*readlimit.TooLargeError](err); ok {
+		// Read from a file or stdin, a payload is at most what an OCPP-J frame carries:
+		// reading stops there, so that an endless stdin does not fill memory.
+		return nil, errs.InvalidInput(errs.CodeInvalidPayload, fmt.Sprintf("--payload: %v, more than an OCPP-J frame carries", tl), err)
 	}
 	if err != nil {
 		return nil, errs.InvalidInput(errs.CodeInputFileOpenFailed, fmt.Sprintf("--payload: %v", err), err)

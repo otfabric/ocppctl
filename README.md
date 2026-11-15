@@ -306,7 +306,8 @@ ws[s]://host[:port]/path/<identity>
 | `--tls-server-name` | the URL host | the name to verify the CSMS certificate against |
 | `--insecure-transport` | off | allow `ws://` (profiles 0 and 1): no encryption, the password in clear text |
 | `--compression` | off | offer permessage-deflate |
-| `--header NAME=VALUE` | | an extra handshake header (repeatable) |
+| `--header NAME=VALUE` | | an extra handshake header (repeatable). A value on the command line is visible to other local users (in the process list): give a token with `--header-file` |
+| `--header-file` | | a file of `NAME=VALUE` lines, one extra handshake header each, at most 64 KiB; blank lines and `#` comments are skipped; or set `OCPPCTL_HEADER_FILE`. Its headers come before those of `--header`. A malformed line is refused by its number, never shown (exit 3) |
 | `--timeout` | `30s` | the response timeout of a CALL |
 | `--connect-timeout` | `10s` | dial, TLS and WebSocket handshake |
 
@@ -456,7 +457,7 @@ connected to ws://localhost:9000/CS001 as CS001 (OCPP 2.1)
 error: Heartbeat: the peer answered with CALLERROR FormatViolation: bogus: not a property of this object
 ```
 
-A CALL that may change state and gets no answer in `--timeout` exits 5 with `outcome_unknown`: the CSMS may have acted on it, and ocppctl does not send it again. CALLs the CSMS sends while ocppctl waits are answered with the first schema-valid answer (`{}` or status Accepted) and listed in `.received`. For a SEND (OCPP 2.1): `ocppctl client send NotifyPeriodicEventStream --url "$URL" --payload @stream.json`.
+A CALL that may change state and gets no answer in `--timeout` exits 5 with `outcome_unknown`: the CSMS may have acted on it, and ocppctl does not send it again. CALLs the CSMS sends while ocppctl waits are answered with the first schema-valid answer (`{}` or status Accepted) and listed in `.received`: the first 1000, as long as their payloads total at most 8 MiB; any more are answered as well and counted in `.received_dropped`. For a SEND (OCPP 2.1): `ocppctl client send NotifyPeriodicEventStream --url "$URL" --payload @stream.json`.
 
 #### Simulate a station, or 100 stations for a load test
 
@@ -796,6 +797,7 @@ Some variables are shared by the client and the server, with a meaning for each:
 | **OCPPCTL_CONNECT_TIMEOUT** | duration | **`client`**: dial, TLS and WebSocket handshake timeout | `--connect-timeout` | 10s |
 | **OCPPCTL_CONTROL_SOCKET** | string | **`server start`**, **`call`**, **`stations`**: the control socket | `--control-socket` | ocppctl.sock |
 | **OCPPCTL_DURATION** | duration | **`client run`**, **`server start`**: stop after this long | `--duration` | until interrupted |
+| **OCPPCTL_HEADER_FILE** | string | **`client`**: file of `NAME=VALUE` lines, extra handshake headers | `--header-file` | |
 | **OCPPCTL_INSECURE_TRANSPORT** | bool | **`client`**: allow ws://; **`server start`**: allow listening without TLS | `--insecure-transport` | false |
 | **OCPPCTL_LISTEN** | string | **`server start`**: host:port to listen on | `--listen` | :9000 |
 | **OCPPCTL_MAX_STATIONS** | int | **`server start`**: most stations at once (0: 10000) | `--max-stations` | 0 |
@@ -809,7 +811,7 @@ Some variables are shared by the client and the server, with a meaning for each:
 | **OCPPCTL_PATH** | string | **`server start`**: URL path prefix | `--path` | / |
 | **OCPPCTL_PING_INTERVAL** | duration | **`client run`**, **`server start`**: WebSocket ping interval (0: no pings) | `--ping-interval` | 0 |
 | **OCPPCTL_RATE_BURST** | int | **`server start`**: burst of `--rate-limit` (0: the rate, rounded up) | `--rate-burst` | 0 |
-| **OCPPCTL_RATE_LIMIT** | float | **`server start`**: messages a second per station (0: no limit) | `--rate-limit` | 0 |
+| **OCPPCTL_RATE_LIMIT** | float | **`server start`**: messages a second per station, up to 1000000 (0: no limit) | `--rate-limit` | 0 |
 | **OCPPCTL_STATION** | string | **`server call`**: identity of the station | `--station` | |
 | **OCPPCTL_TIMEOUT** | duration | **`client`**: response timeout of a CALL; **`server call`**: how long to wait for the station | `--timeout` | 30s |
 | **OCPPCTL_TLS_CA** | string | **`client`**: PEM file of the CAs that verify the CSMS | `--tls-ca` | system roots |

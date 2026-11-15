@@ -241,7 +241,7 @@ func TestPasswordAndHeaders(t *testing.T) {
 	if p, err := tg.Parse(); err != nil || p.Password != "fromenv" {
 		t.Fatalf("password from the environment: %+v, %v", p, err)
 	}
-	h := Handshake{Extensions: "permessage-deflate; client_no_context_takeover"}
+	h := Handshake{Compression: true}
 	if !h.Compressed() || (&Handshake{}).Compressed() {
 		t.Fatal("Compressed")
 	}

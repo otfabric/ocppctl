@@ -35,6 +35,9 @@ type CallResult struct {
 	DurationMS int64           `json:"duration_ms"`
 	Validated  bool            `json:"validated"`
 	Received   []Received      `json:"received"`
+	// ReceivedDropped counts the CALLs and SENDs of the peer that were answered but not
+	// kept in Received, past its bound (docs/json-output.md); omitted when zero.
+	ReceivedDropped int `json:"received_dropped,omitempty"`
 }
 
 // MarshalTextOutput renders the response, indented, with a header line.
@@ -44,6 +47,9 @@ func (r CallResult) MarshalTextOutput() (string, error) {
 	b.WriteString(indentJSON(r.Response))
 	for _, rc := range r.Received {
 		_, _ = fmt.Fprintf(&b, "\nreceived %s from the peer, answered %s\n", safe(rc.Action), answered(rc))
+	}
+	if r.ReceivedDropped > 0 {
+		_, _ = fmt.Fprintf(&b, "\nreceived %d more CALLs and SENDs from the peer, answered and not listed\n", r.ReceivedDropped)
 	}
 	return b.String(), nil
 }
@@ -495,7 +501,11 @@ type ScriptResult struct {
 	// Unexpected lists the CALLs from the CSMS that no step waited for; they were answered
 	// with the default answer.
 	Unexpected []Received `json:"unexpected"`
-	DurationMS int64      `json:"duration_ms"`
+	// UnexpectedDropped counts the CALLs and SENDs from the CSMS that no step waited for
+	// and that were answered but not kept in Unexpected, past its bound
+	// (docs/json-output.md); omitted when zero.
+	UnexpectedDropped int   `json:"unexpected_dropped,omitempty"`
+	DurationMS        int64 `json:"duration_ms"`
 }
 
 // MarshalTextOutput renders one line per step and a summary.
@@ -518,6 +528,9 @@ func (r ScriptResult) MarshalTextOutput() (string, error) {
 	}
 	for _, u := range r.Unexpected {
 		_, _ = fmt.Fprintf(&b, "note       received %s, which no step waited for; answered %s\n", safe(u.Action), answered(u))
+	}
+	if r.UnexpectedDropped > 0 {
+		_, _ = fmt.Fprintf(&b, "note       received %d more CALLs and SENDs that no step waited for, answered and not listed\n", r.UnexpectedDropped)
 	}
 	_, _ = fmt.Fprintf(&b, "%d passed, %d failed, %d skipped in %d ms\n", r.Passed, r.Failed, r.Skipped, r.DurationMS)
 	return b.String(), nil

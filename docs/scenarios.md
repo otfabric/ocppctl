@@ -154,7 +154,7 @@ A `payload` or `answer` can be a JSON file: `"@file"`. The path is relative to t
     payload: "@../payloads/meter-1.6.json"
 ```
 
-The file is read when the scenario is loaded, and variables in it are substituted when the step runs. A payload can also be a JSON string in YAML: `payload: '{"connectorId": 1}'`.
+The file is read when the scenario is loaded, and variables in it are substituted when the step runs. A payload file is at most 68 KiB (what an OCPP-J frame carries), and the scenario file itself at most 4 MiB; a larger one is refused before connecting (exit 3, `invalid_config`). A payload can also be a JSON string in YAML: `payload: '{"connectorId": 1}'`.
 
 ## CALLs from the CSMS
 
@@ -163,10 +163,10 @@ The CSMS may send CALLs at any time. How they are handled:
 - **A step waits for it.** When a CALL arrives for an action that the current step or a later `wait_for` step waits for, it is held for that step: the CSMS gets no answer until the step runs, then the step's `answer`. A CALL that arrives early, while `call`, `sleep` or other steps run, is therefore not lost; keep those steps short enough for the CSMS's own response timeout.
 - **Out of order.** OCPP-J lets a peer have one CALL outstanding at a time. When a `wait_for` waits for X and the CSMS sends Y, which a later step waits for (or Y is already held), X cannot arrive until Y is answered, and Y's answer belongs to its own step. The `wait_for` of X therefore fails at once, saying so ("reorder the steps"), instead of waiting for its timeout; Y stays held for its step, which can still pass with `--keep-going`.
 - **Progress.** While a `wait_for` or `expect_no_call` runs, stderr says what it waits for (`waiting up to 30s for RequestStartTransaction from the CSMS`, `expecting no CALL from the CSMS for 10s`).
-- **No step waits for it.** It is answered at once with the first answer its response schema accepts: `{}`, then `{"status":"Accepted"}`, else the CALLERROR `NotSupported`. It is listed in the result as **unexpected**, with the answer it got. Unexpected CALLs do not fail the scenario.
+- **No step waits for it.** It is answered at once with the first answer its response schema accepts: `{}`, then `{"status":"Accepted"}`, else the CALLERROR `NotSupported`. It is listed in the result as **unexpected**, with the answer it got: the first 1000, as long as their payloads total at most 8 MiB; any more are answered as well and counted in `unexpected_dropped`. Unexpected CALLs do not fail the scenario.
 - **SENDs** from the CSMS (2.1) are listed as unexpected.
 - A held CALL whose request fails the schema is answered at once with the CALLERROR of the violation and does not reach its step, which then times out.
-- **`expect_no_call`** fails when any CALL or SEND arrives during it, whether a later step waits for it or not; the CALL is still handled as above.
+- **`expect_no_call`** fails when any CALL or SEND arrives during it, whether a later step waits for it or not; the CALL is still handled as above. Its message names the first 16 that arrived and counts the rest (`the CSMS sent Reset, ClearCache, … and 3 more`).
 
 ## Result and exit codes
 

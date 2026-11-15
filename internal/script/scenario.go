@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -20,6 +19,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/otfabric/ocppctl/internal/ocppx"
+	"github.com/otfabric/ocppctl/internal/readlimit"
 )
 
 // Scenario is a list of steps.
@@ -213,7 +213,10 @@ func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 
 // Load reads and checks a scenario. Payload files are read relative to its directory.
 func Load(path string) (*Scenario, error) {
-	data, err := os.ReadFile(filepath.Clean(path))
+	data, err := readlimit.File(path, readlimit.Config)
+	if tl, ok := errors.AsType[*readlimit.TooLargeError](err); ok {
+		return nil, fmt.Errorf("%s: %w", path, tl)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +280,11 @@ func (s *Scenario) resolve(dir string) error {
 			if !filepath.IsAbs(f) {
 				f = filepath.Join(dir, f)
 			}
-			b, err := os.ReadFile(filepath.Clean(f))
+			b, err := readlimit.File(f, readlimit.Payload)
+			if tl, ok := errors.AsType[*readlimit.TooLargeError](err); ok {
+				bad(i, "%s: %v, more than an OCPP-J frame carries", p.File, tl)
+				continue
+			}
 			if err != nil {
 				bad(i, "%v", err)
 				continue
