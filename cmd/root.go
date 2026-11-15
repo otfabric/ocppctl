@@ -68,7 +68,7 @@ stderr. Exit codes are stable: see docs/exitcodes.md.`,
 	)
 	// Every other flag and argument completes no file names, except these files.
 	clihelp.CompleteRest(root, map[string][]string{
-		"config": {"yaml", "yml", "json"}, "output": nil, "password-file": nil, "passwords-file": nil, "control-socket": nil,
+		"config": {"yaml", "yml", "json"}, "output": nil, "password-file": nil, "header-file": nil, "passwords-file": nil, "control-socket": nil,
 		"tls-ca": pemFiles, "tls-cert": pemFiles, "tls-key": pemFiles, "tls-client-ca": pemFiles,
 	}, map[string][]string{"client script": {"yaml", "yml"}})
 	return root

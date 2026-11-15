@@ -70,9 +70,13 @@ type control struct {
 	closed bool
 }
 
-// listenControl creates the control socket at path, mode 0600. A socket left behind by a
-// server that is gone is replaced; one a running server answers on, or a file that is not
-// a socket, is not.
+// listened is called once the control socket exists, before its mode is set: a test
+// looks at the mode the socket was created with.
+var listened = func(string) {}
+
+// listenControl creates the control socket at path, mode 0600 from the start (listenUnix).
+// A socket left behind by a server that is gone is replaced; one a running server answers
+// on, or a file that is not a socket, is not.
 func listenControl(path string, c *CSMS) (*control, error) {
 	fail := func(msg string, err error) error {
 		return errs.New(errs.KindTransport, errs.CodeControlSocketFailed, msg, err)
@@ -87,10 +91,11 @@ func listenControl(path string, c *CSMS) (*control, error) {
 		}
 		_ = os.Remove(path)
 	}
-	ln, err := net.Listen("unix", path)
+	ln, err := listenUnix(path)
 	if err != nil {
 		return nil, fail(fmt.Sprintf("control socket %s: %v (choose another with --control-socket, or disable it with --control-socket '')", path, err), err)
 	}
+	listened(path)
 	if err := os.Chmod(path, 0o600); err != nil {
 		_ = ln.Close()
 		return nil, fail(fmt.Sprintf("control socket %s: %v", path, err), err)

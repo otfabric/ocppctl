@@ -36,7 +36,7 @@ ocppctl server start [--config csms.yaml] [flags]
 | `--control-socket` | `OCPPCTL_CONTROL_SOCKET` | `ocppctl.sock` | the control socket; an empty value disables it |
 | `--max-stations` | `OCPPCTL_MAX_STATIONS` | 0 (10000) | more simultaneous stations are refused with HTTP 503 |
 | `--ping-interval` | `OCPPCTL_PING_INTERVAL` | 0 | send WebSocket pings at this interval and drop a station whose pong is late |
-| `--rate-limit`, `--rate-burst` | `OCPPCTL_RATE_LIMIT`, `OCPPCTL_RATE_BURST` | 0 | handle at most this many messages a second per station (more wait; OCPP has no "too many" error); the burst defaults to the rate, rounded up |
+| `--rate-limit`, `--rate-burst` | `OCPPCTL_RATE_LIMIT`, `OCPPCTL_RATE_BURST` | 0 | handle at most this many messages a second per station, up to 1000000 (more wait; OCPP has no "too many" error); the burst defaults to the rate, rounded up. A rate that is not a number in that range is refused (exit 3) |
 | `--allow` | `OCPPCTL_ALLOW` | any | accept connections only from these addresses or CIDR prefixes (others: HTTP 403) |
 | `--duration` | `OCPPCTL_DURATION` | until Ctrl-C | stop after this long, e.g. `10m` |
 | `--format` | `OCPPCTL_FORMAT` | `text` | events as text, json (JSON Lines) or table |
@@ -46,7 +46,10 @@ Everything is checked before the server listens: a bad flag combination, an unre
 certificate or an invalid model exits 3 with every problem of the model listed. A port
 that cannot be bound or a control socket that cannot be created exits 4. Ctrl-C or the
 end of `--duration` stops the server (exit 0): every session is closed with WebSocket
-status 1001 and the control socket is removed.
+status 1001 and the control socket is removed. `server start` returns once every session
+has ended and its `disconnected` event is written: within go-ocpp's bound of the closing
+handshake (10 s) for a station that does not complete it. A station that connects while
+the server stops is refused with HTTP 503.
 
 The station identity is the last path segment of the URL. OCPP 2.x identities must be
 identifierStrings without `:`, at most 48 characters (go-ocpp refuses others with HTTP 400). When a station
@@ -191,7 +194,11 @@ was chosen over a per-process temporary name, which the other commands could not
 discover, and over a shared directory such as /tmp, where another user could claim the
 name first.
 
-- The socket is created with mode 0600: only its owner can send CALLs through it.
+- The socket is created with mode 0600: only its owner can send CALLs through it. On
+  Unix the mode applies from the moment the socket exists.
+- When its directory can be written by other users and has no sticky bit, `server start`
+  prints a warning on stderr: such a user could replace the socket. Choose a directory
+  only you can write to.
 - A socket left behind by a server that is gone is replaced; if a running server answers
   on it, or the path is not a socket, `server start` exits 4 (`control_socket_failed`).
 - It is removed when the server stops. `--control-socket ''` disables it.

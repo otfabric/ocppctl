@@ -32,7 +32,8 @@ Fields that do not apply are omitted, not null, unless the tables below say othe
 | `response` | the CALLRESULT payload |
 | `duration_ms` | from sending the CALL to the response |
 | `validated` | `true` when the request was checked against the schema before it was sent; `false` with `--raw`. The response is always checked |
-| `received` | CALLs and SENDs the peer sent meanwhile, and how they were answered: `time`, `action`, `request`, `response` (omitted for a SEND, or when answered with a CALLERROR), `error_code` (the CALLERROR code, when answered with one). Always `[]` for `server call` |
+| `received` | CALLs and SENDs the peer sent meanwhile, and how they were answered: `time`, `action`, `request`, `response` (omitted for a SEND, or when answered with a CALLERROR), `error_code` (the CALLERROR code, when answered with one). The first 1000, as long as their `request` and `response` total at most 8 MiB. Always `[]` for `server call` |
+| `received_dropped` | how many more CALLs and SENDs the peer sent, answered as the others but not listed in `received`; omitted when there were none |
 
 ```json
 {
@@ -93,7 +94,8 @@ With `--format text` only the payload itself is printed, so that it can be piped
 | `target`, `version` | the URL and the version negotiated |
 | `passed`, `failed`, `skipped` | step counts |
 | `steps` | one per step: `index` (1-based), `name`, `kind` (`call`, `send`, `wait_for`, `expect_no_call`, `sleep`, `disconnect`, `reconnect`), `action`, `result` (`pass`, `fail`, `skipped`), `duration_ms`, `message` (why it failed), `request` (sent by a `call`/`send`, or received by a `wait_for`), `response` (received, or answered by a `wait_for`), `error_code` (a CALLERROR received or answered) |
-| `unexpected` | CALLs and SENDs from the CSMS that no step waited for, as in `received` above |
+| `unexpected` | CALLs and SENDs from the CSMS that no step waited for, as in `received` above, within the same bounds |
+| `unexpected_dropped` | how many more there were, answered but not listed in `unexpected`; omitted when there were none |
 | `duration_ms` | the whole run |
 
 ### `actions`

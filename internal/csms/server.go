@@ -16,6 +16,7 @@ import (
 	"log"
 	"log/slog"
 	"maps"
+	"math"
 	"net"
 	"net/http"
 	"net/netip"
@@ -57,7 +58,7 @@ type StartConfig struct {
 	ControlSocket     string   `flag:"control-socket" env:"OCPPCTL_CONTROL_SOCKET" desc:"Unix socket that server call and server stations use; empty disables it"`
 	MaxStations       int      `flag:"max-stations" env:"OCPPCTL_MAX_STATIONS" desc:"Most stations connected at once; more are refused with HTTP 503 (0: go-ocpp's default, 10000)"`
 	PingInterval      string   `flag:"ping-interval" env:"OCPPCTL_PING_INTERVAL" desc:"Send a WebSocket ping to every station at this interval, and drop it when the pong is late (0: no pings)"`
-	RateLimit         float64  `flag:"rate-limit" env:"OCPPCTL_RATE_LIMIT" desc:"Handle at most this many messages a second per station; more wait (0: no limit)"`
+	RateLimit         float64  `flag:"rate-limit" env:"OCPPCTL_RATE_LIMIT" desc:"Handle at most this many messages a second per station, up to 1000000; more wait (0: no limit)"`
 	RateBurst         int      `flag:"rate-burst" env:"OCPPCTL_RATE_BURST" desc:"Burst of --rate-limit (default: the rate, rounded up)"`
 	Allow             []string `flag:"allow" env:"OCPPCTL_ALLOW" desc:"Accept connections only from these addresses or CIDR prefixes (default: any)"`
 	Duration          string   `flag:"duration" env:"OCPPCTL_DURATION" desc:"Stop after this long, such as 10m (default: run until interrupted)"`
@@ -84,7 +85,13 @@ type plan struct {
 	allow     []netip.Prefix
 	ping      time.Duration
 	duration  time.Duration
+	rate      float64 // 0: no limit
+	burst     int
 }
+
+// MaxRateLimit is the largest --rate-limit, in messages a second per station. Its default
+// burst, the rate rounded up, fits an int on every platform.
+const MaxRateLimit = 1_000_000
 
 // Check validates the configuration of `server start`, the model included, and reports
 // every problem of the model at once.
@@ -157,6 +164,14 @@ func (cfg *StartConfig) plan() (*plan, error) {
 	}
 	if cfg.MaxStations < 0 || cfg.RateLimit < 0 || cfg.RateBurst < 0 {
 		return nil, errs.InvalidInput(errs.CodeInvalidInput, "--max-stations, --rate-limit and --rate-burst must not be negative", nil)
+	}
+	// NaN fails every comparison: it is refused here, not taken for "no limit".
+	if !(cfg.RateLimit <= MaxRateLimit) {
+		return nil, errs.InvalidInput(errs.CodeInvalidInput,
+			fmt.Sprintf("invalid --rate-limit %v: want a number of messages a second from 0 (no limit) to %d", cfg.RateLimit, MaxRateLimit), nil)
+	}
+	if p.rate, p.burst = cfg.RateLimit, cfg.RateBurst; p.rate > 0 && p.burst == 0 {
+		p.burst = int(math.Ceil(p.rate))
 	}
 	return p, nil
 }
@@ -283,6 +298,12 @@ type CSMS struct {
 	pending  map[string]string
 	sessions map[*server.Session]bool // compression
 
+	// active counts the requests in ServeHTTP, a station's session included: Run waits
+	// for them, so that no event is emitted after it returns. stopped is set under mu
+	// before that wait: no request is added to active after it.
+	active  sync.WaitGroup
+	stopped bool
+
 	callTimeout time.Duration
 }
 
@@ -317,6 +338,9 @@ func Run(ctx context.Context, cfg *StartConfig, emit func(types.ServerEvent), st
 		if ctl, err = listenControl(cfg.ControlSocket, c); err != nil {
 			_ = ln.Close()
 			return err
+		}
+		if w := sharedDir(cfg.ControlSocket); w != "" && stderr != nil {
+			_, _ = fmt.Fprintln(stderr, w)
 		}
 	}
 	if p.duration > 0 {
@@ -361,6 +385,13 @@ func Run(ctx context.Context, cfg *StartConfig, emit func(types.ServerEvent), st
 	defer cancel()
 	_ = c.srv.Shutdown(sctx)
 	_ = hs.Shutdown(sctx)
+	// Shutdown returns at its deadline while sessions are still closing; each ends within
+	// go-ocpp's bound of the closing handshake, and its disconnected event comes before
+	// Run returns.
+	c.mu.Lock()
+	c.stopped = true
+	c.mu.Unlock()
+	c.active.Wait()
 	if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
 		return errs.New(errs.KindTransport, errs.CodeListenFailed, fmt.Sprintf("server stopped: %v", serveErr), serveErr)
 	}
@@ -405,15 +436,8 @@ func (c *CSMS) options(cfg *StartConfig, stderr io.Writer) []server.Option {
 	if p.ping > 0 {
 		opts = append(opts, server.WithPingInterval(p.ping))
 	}
-	if cfg.RateLimit > 0 {
-		burst := cfg.RateBurst
-		if burst == 0 {
-			burst = int(cfg.RateLimit)
-			if float64(burst) < cfg.RateLimit {
-				burst++
-			}
-		}
-		opts = append(opts, server.WithIncomingRateLimit(cfg.RateLimit, burst))
+	if p.rate > 0 {
+		opts = append(opts, server.WithIncomingRateLimit(p.rate, p.burst))
 	}
 	// CALLs from the control socket carry their own deadline.
 	opts = append(opts, server.WithResponseTimeout(maxCallTimeout))
@@ -449,8 +473,18 @@ func (c *CSMS) reporting(a server.Authenticator) server.Authenticator {
 }
 
 // ServeHTTP checks the path and the remote address, records the negotiated extensions and
-// hands the connection to the go-ocpp server.
+// hands the connection to the go-ocpp server. Once Run has stopped serving, a request is
+// refused with HTTP 503.
 func (c *CSMS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	c.mu.Lock()
+	if c.stopped {
+		c.mu.Unlock()
+		refuse(w, "shutting down", http.StatusServiceUnavailable)
+		return
+	}
+	c.active.Add(1)
+	c.mu.Unlock()
+	defer c.active.Done()
 	rest, ok := strings.CutPrefix(r.URL.EscapedPath(), c.plan.prefix)
 	if !ok || rest == "" || strings.Contains(rest, "/") {
 		ev := types.NewServerEvent("refused")

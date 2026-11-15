@@ -69,8 +69,10 @@ func connCompletion(cmd *cobra.Command) {
 			_ = cmd.MarkFlagFilename(f, "pem", "crt", "cer", "key")
 		}
 	}
-	if cmd.Flags().Lookup("password-file") != nil {
-		_ = cmd.MarkFlagFilename("password-file")
+	for _, f := range []string{"password-file", "header-file"} {
+		if cmd.Flags().Lookup(f) != nil {
+			_ = cmd.MarkFlagFilename(f)
+		}
 	}
 }
 

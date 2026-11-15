@@ -122,7 +122,7 @@ At least one EVSE, each with at least one connector.
 |---|---|---|---|
 | `heartbeat_interval` | duration ≥ 1s | the CSMS's | the Heartbeat interval. Leave it out to use the `interval` of the CSMS's BootNotification answer (300 s when it gives none) |
 | `meter_interval` | duration ≥ 1s | `60s` | how often a running session reports its meter, unless the session sets its own |
-| `remote_power_w` | number | `11000` | the charging power of a session the CSMS starts remotely, in W |
+| `remote_power_w` | number, 0 to 10000000 | `11000` | the charging power of a session the CSMS starts remotely, in W |
 
 ### `sessions`
 
@@ -134,7 +134,7 @@ Charging sessions the station starts by itself, counted from its first accepted 
 | `evse`, `connector` | integers, required | where: a connector the model has |
 | `id_token` | string, required | the idTag (1.6) or idToken (2.x) that starts it |
 | `token_type` | string | the 2.x idToken type (default `ISO14443`) |
-| `power_w` | number ≥ 0 | the charging power, in W: the energy register grows by `power_w` × time |
+| `power_w` | number, 0 to 10000000 | the charging power, in W (at most 10 MW): the energy register grows by `power_w` × time |
 | `meter_interval` | duration ≥ 1s | how often it reports its meter (default: the model's `meter_interval`, else 60 s) |
 | `duration` | duration > 0, required | when to stop |
 
@@ -183,8 +183,8 @@ Before connecting, the model is checked and every problem reported:
 - `station.vendor` and `station.model` are required; `model` is at most 20 characters, `vendor` at most 20 when OCPP 1.6 is offered and 50 otherwise;
 - at least one EVSE; EVSE ids ≥ 1 and unique; at least one connector per EVSE, ids ≥ 1 and unique within the EVSE;
 - `heartbeat_interval` and every `meter_interval` at least 1s (or left out);
-- every session names a connector the model has, has an `id_token`, a non-negative, finite `power_w` and a non-negative `after`, and a positive `duration`;
-- `remote_power_w`, when given, is non-negative and finite;
+- every session names a connector the model has, has an `id_token`, a `power_w` from 0 to 10000000 (10 MW) and a non-negative `after`, and a positive `duration`;
+- `remote_power_w`, when given, is a number from 0 to 10000000 (10 MW);
 - `device_model` names are `Component.Variable`, and mutabilities one of the three;
 - every `answers` entry names an action a CSMS sends in some OCPP version (not one the station sends), its value is one of the four behaviours or an object, and an object is a valid response in at least one of the versions offered (`--ocpp-version`) that have the action.
 

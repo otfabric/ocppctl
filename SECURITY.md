@@ -52,6 +52,11 @@ A CSMS starts and stops charging sessions, resets stations, changes their config
 - Passwords are never printed, logged or traced. Keep the files readable by you alone (`chmod 600`); a model with passwords in it is such a file too. `server generate-config` creates its output file with mode 0600
 - In CI, pass `OCPPCTL_PASSWORD` from the secret store of the pipeline
 
+### Handshake Headers
+
+- A value given with **`--header NAME=VALUE`** is on the command line, which other local users can read in the process list. Give a token or another secret header with **`--header-file`** (or `OCPPCTL_HEADER_FILE`): a file of `NAME=VALUE` lines, read when the command runs. A malformed line is reported by its number, never by its content
+- Header values are never printed, logged or traced. Keep the file readable by you alone (`chmod 600`)
+
 ### Private Keys
 
 `--tls-key` files (the station's client key, the server's key) are read from the files you name and are never written or printed. Keep them readable by you alone.
@@ -67,13 +72,30 @@ A CSMS starts and stops charging sessions, resets stations, changes their config
 
 - `server start` listens on **all network interfaces** by default (`--listen :9000`). Use `--listen 127.0.0.1:9000` to bind to one address, `--allow` to restrict the clients, or a host firewall
 - **Authentication is required** unless `--no-auth` is given: passwords, client certificates, or both. `--no-auth` accepts any station under any identity
-- The **control socket** lets `server call` and `server stations` reach the server. It is created with mode 0600, by default as `ocppctl.sock` in the **working directory**, and removed on exit; `--control-socket ''` disables it. Anyone who can open it can send CALLs to the connected stations without `--yes`, which is a check of the `server call` command, not of the socket. Do not place it in a directory others can write to
+- The **control socket** lets `server call` and `server stations` reach the server. It is created with mode 0600 (on Unix, from the moment it exists), by default as `ocppctl.sock` in the **working directory**, and removed on exit; `--control-socket ''` disables it. Anyone who can open it can send CALLs to the connected stations without `--yes`, which is a check of the `server call` command, not of the socket. Do not place it in a directory others can write to: in one that has no sticky bit, another user could replace the socket, and `server start` prints a warning on stderr
 - The server answers what its model says: a model that accepts every token (the default) lets every station charge
+
+### Resource Limits
+
+What ocppctl reads from files, stdin and its peers is bounded. A file or stream larger than its limit is refused before anything is sent (exit 3), and reading stops just past the limit, so that an endless stdin or a wrong file does not fill memory.
+
+| Input | Limit | Refused with |
+|---|---|---|
+| `--payload @file`, `--payload -` (and `--details` of `frame encode`) | 68 KiB: an OCPP-J frame (64 KiB) and some slack | `invalid_payload` |
+| `frame decode -` | 68 KiB | `protocol_violation` |
+| `--password-file`, `--header-file` | 64 KiB | `input_decode_failed` |
+| station and CSMS models (`--config`), scenarios | 4 MiB | `invalid_config` |
+| a `payload` or `answer` file of a scenario | 68 KiB | `invalid_config` |
+| one request line on the control socket | 4 MiB | the connection is closed without an answer |
+
+What a command keeps of the CALLs and SENDs its peer sends meanwhile is bounded too: `received` of a `client` command and `unexpected` of `client script` list the first 1000, as long as their payloads total at most 8 MiB; the rest are answered as usual and counted in `received_dropped` and `unexpected_dropped`. A failed `expect_no_call` names the first 16 actions and counts the others.
+
+Numbers that set how much work is done are range-checked: `--rate-limit` is a number from 0 (no limit) to 1000000 messages a second; `power_w` and `remote_power_w` of a station model are from 0 to 10000000 W (10 MW); a `{N..M}` identity range gives at most 10000 stations.
 
 ### Output
 
 - Payloads, events, scenario results and `--debug` traces contain station identities, id tokens (RFID UIDs, eMAIDs), transaction ids, meter values and network addresses, which may be personal or commercially sensitive data. Be careful when storing or sharing them, and do not attach them to public issues unredacted
-- `--debug` prints every OCPP frame sent and received, and go-ocpp's log, to stderr. It does not trace the WebSocket handshake headers, so passwords do not appear in it
+- `--debug` prints every OCPP frame sent and received, and go-ocpp's log, to stderr. It does not trace the WebSocket handshake headers, so passwords and `--header` values do not appear in it
 
 ### Privileges
 

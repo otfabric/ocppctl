@@ -62,6 +62,11 @@ func TestExpandURLOverflow(t *testing.T) {
 
 func TestSeconds(t *testing.T) {
 	cases := map[int]time.Duration{1: time.Second, 300: 300 * time.Second, math.MaxInt: maxInterval}
+	if strconv.IntSize == 32 {
+		// 2^31-1 seconds (68 years) is below maxInterval: it is kept as it is.
+		n := math.MaxInt
+		cases[n] = time.Duration(n) * time.Second
+	}
 	if strconv.IntSize == 64 {
 		var wraps, negative int64 = 18446744074, 9223372037
 		cases[int(wraps)] = maxInterval    // n*1e9 wraps to 290 ms

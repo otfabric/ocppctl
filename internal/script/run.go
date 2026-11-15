@@ -59,14 +59,20 @@ type runner struct {
 	mu     sync.Mutex
 	cursor int
 	quiet  bool     // in expect_no_call
-	noise  []string // CALLs that arrived during expect_no_call
+	noise  []string // CALLs that arrived during expect_no_call, the first maxNoise
+	more   int      // and how many more
 	inbox  chan *incoming
 	// ended is closed when the scenario has run: CALLs still held for a step
 	// get the default answer, so that the connection can close gracefully.
-	ended      chan struct{}
-	pending    []*incoming
-	unexpected []types.Received
+	ended   chan struct{}
+	pending []*incoming
+	// unexpected keeps the CALLs and SENDs no step waited for, within the bounds of
+	// answer.Log.
+	unexpected answer.Log
 }
+
+// maxNoise bounds the actions an expect_no_call step names in its failure.
+const maxNoise = 16
 
 // Prepare loads and checks the scenario and the target.
 func Prepare(cfg *Config) (*Scenario, *conn.Parsed, error) {
@@ -139,8 +145,13 @@ func Run(ctx context.Context, cfg *Config, sc *Scenario, p *conn.Parsed, stderr 
 	r.end()
 	r.mu.Lock()
 	r.cursor = len(sc.Steps)
-	res.Unexpected = append([]types.Received{}, r.unexpected...)
 	r.mu.Unlock()
+	res.Unexpected = []types.Received{}
+	for _, u := range r.unexpected.Received() {
+		res.Unexpected = append(res.Unexpected, types.Received{Time: types.Millis(u.Time), Action: u.Action, Request: u.Request,
+			Response: u.Response, ErrorCode: u.ErrorCode})
+	}
+	res.UnexpectedDropped = r.unexpected.Dropped()
 	res.DurationMS = time.Since(start).Milliseconds()
 	return res, nil
 }
@@ -168,7 +179,7 @@ func (r *runner) dial(ctx context.Context) error {
 		p.Timeout = max(p.Timeout, time.Duration(r.sc.Steps[i].Timeout))
 	}
 	c, err := conn.Dial(ctx, &p, conn.Options{
-		Handler: func(v ocpp.Version) ocpp.Dispatcher { return &dispatcher{r: r, v: v, def: &answer.Default{Version: v}} },
+		Handler: func(v ocpp.Version) ocpp.Dispatcher { return &dispatcher{r: r, v: v} },
 		Debug:   r.cfg.Debug, Stderr: r.errw,
 	})
 	if err != nil {
@@ -405,7 +416,7 @@ func defaultAnswer(v ocpp.Version, action string) (json.RawMessage, error) {
 
 func (r *runner) expectNoCall(ctx context.Context, d time.Duration) error {
 	r.mu.Lock()
-	r.quiet, r.noise = true, nil
+	r.quiet, r.noise, r.more = true, nil, 0
 	r.mu.Unlock()
 	_, _ = fmt.Fprintf(r.errw, "expecting no CALL from the CSMS for %s\n", d)
 	select {
@@ -415,10 +426,25 @@ func (r *runner) expectNoCall(ctx context.Context, d time.Duration) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.quiet = false
+	if r.more > 0 {
+		return fmt.Errorf("the CSMS sent %s and %d more", strings.Join(r.noise, ", "), r.more)
+	}
 	if len(r.noise) > 0 {
 		return fmt.Errorf("the CSMS sent %s", strings.Join(r.noise, ", "))
 	}
 	return nil
+}
+
+// noisy notes action as sent during expect_no_call; r.mu is held.
+func (r *runner) noisy(action string) {
+	if !r.quiet {
+		return
+	}
+	if len(r.noise) == maxNoise {
+		r.more++
+		return
+	}
+	r.noise = append(r.noise, action)
 }
 
 // waited reports whether a step from the current one on waits for action.
@@ -434,17 +460,14 @@ func (r *runner) waited(action string) bool {
 // dispatcher answers the CSMS's CALLs: through the wait_for step that waits for them, or
 // with the default answer when no step does.
 type dispatcher struct {
-	r   *runner
-	v   ocpp.Version
-	def *answer.Default
+	r *runner
+	v ocpp.Version
 }
 
 func (d *dispatcher) Dispatch(ctx context.Context, p ocpp.Peer, action string, req json.RawMessage) (json.RawMessage, error) {
 	r := d.r
 	r.mu.Lock()
-	if r.quiet {
-		r.noise = append(r.noise, action)
-	}
+	r.noisy(action)
 	waited := r.waited(action)
 	r.mu.Unlock()
 	if waited {
@@ -475,27 +498,22 @@ func (d *dispatcher) Dispatch(ctx context.Context, p ocpp.Peer, action string, r
 }
 
 // unexpected answers a CALL that no step answers with the default answer and
-// lists it in the result.
-func (d *dispatcher) unexpected(ctx context.Context, p ocpp.Peer, action string, req json.RawMessage) (json.RawMessage, error) {
-	r := d.r
-	resp, err := d.def.Dispatch(ctx, p, action, req)
-	rec := types.Received{Time: types.Millis(time.Now()), Action: action, Request: req, Response: resp}
+// lists it in the result, once.
+func (d *dispatcher) unexpected(_ context.Context, _ ocpp.Peer, action string, req json.RawMessage) (json.RawMessage, error) {
+	resp, err := answer.Answer(d.v, action, req)
+	rec := answer.Received{Time: time.Now().UTC(), Action: action, Request: req, Response: resp}
 	if ce, ok := errors.AsType[*ocpp.CallError](err); ok {
 		rec.ErrorCode = string(ce.Code)
 	}
-	r.mu.Lock()
-	r.unexpected = append(r.unexpected, rec)
-	r.mu.Unlock()
+	d.r.unexpected.Add(rec)
 	return resp, err
 }
 
 func (d *dispatcher) DispatchSend(_ context.Context, _ ocpp.Peer, action string, req json.RawMessage) error {
 	r := d.r
 	r.mu.Lock()
-	defer r.mu.Unlock()
-	if r.quiet {
-		r.noise = append(r.noise, action)
-	}
-	r.unexpected = append(r.unexpected, types.Received{Time: types.Millis(time.Now()), Action: action, Request: req})
+	r.noisy(action)
+	r.mu.Unlock()
+	r.unexpected.Add(answer.Received{Time: time.Now().UTC(), Action: action, Request: req})
 	return nil
 }

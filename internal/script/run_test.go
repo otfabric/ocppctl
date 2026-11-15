@@ -15,7 +15,6 @@ import (
 	"github.com/otfabric/go-ocpp"
 	"github.com/otfabric/go-ocpp/server"
 
-	"github.com/otfabric/ocppctl/internal/answer"
 	"github.com/otfabric/ocppctl/internal/conn"
 	"github.com/otfabric/ocppctl/internal/testcsms"
 	"github.com/otfabric/ocppctl/internal/types"
@@ -100,7 +99,7 @@ steps:
 func TestDispatcherDirect(t *testing.T) {
 	v := ocpp.V201
 	r := &runner{sc: &Scenario{Steps: []Step{{WaitFor: "Reset"}}}, inbox: make(chan *incoming, 1), ended: make(chan struct{})}
-	d := &dispatcher{r: r, v: v, def: &answer.Default{Version: v}}
+	d := &dispatcher{r: r, v: v}
 	ctx := context.Background()
 	if _, err := d.Dispatch(ctx, nil, "Reset", json.RawMessage(`{"type":"Sideways"}`)); err == nil {
 		t.Fatal("an invalid waited CALL was accepted")
@@ -115,8 +114,8 @@ func TestDispatcherDirect(t *testing.T) {
 	if err != nil || string(resp) != `{"status":"Accepted"}` {
 		t.Fatalf("an unexpected CALL: %s, %v", resp, err)
 	}
-	if len(r.unexpected) != 2 || r.unexpected[0].Response != nil || len(r.noise) != 2 {
-		t.Fatalf("unexpected %+v, noise %v", r.unexpected, r.noise)
+	if got := r.unexpected.Received(); len(got) != 2 || got[0].Response != nil || len(r.noise) != 2 {
+		t.Fatalf("unexpected %+v, noise %v", got, r.noise)
 	}
 	// A waited CALL after the scenario ended gets the default answer.
 	close(r.ended)

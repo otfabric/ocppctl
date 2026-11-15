@@ -10,9 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
-	"os"
-	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -22,6 +19,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/otfabric/ocppctl/internal/ocppx"
+	"github.com/otfabric/ocppctl/internal/readlimit"
 )
 
 // Model describes a simulated station.
@@ -156,7 +154,10 @@ func (d Duration) D() time.Duration { return time.Duration(d) }
 
 // Load reads a model from a YAML or JSON file and validates it for the versions given.
 func Load(path string, versions []ocpp.Version) (*Model, error) {
-	data, err := os.ReadFile(filepath.Clean(path))
+	data, err := readlimit.File(path, readlimit.Config)
+	if tl, ok := errors.AsType[*readlimit.TooLargeError](err); ok {
+		return nil, fmt.Errorf("%s: %w", path, tl)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +245,7 @@ func (m *Model) Validate(versions []ocpp.Version) error {
 		bad("meter_interval %s: use at least 1s", d)
 	}
 	if !validPower(m.RemotePowerW) {
-		bad("remote_power_w must be a number, not negative")
+		bad("remote_power_w must be a number from 0 to %d (10 MW)", MaxPowerW)
 	}
 	for i, s := range m.Sessions {
 		what := fmt.Sprintf("sessions[%d]", i)
@@ -255,7 +256,7 @@ func (m *Model) Validate(versions []ocpp.Version) error {
 			bad("%s: id_token is required", what)
 		}
 		if !validPower(s.PowerW) {
-			bad("%s: power_w must be a number, not negative", what)
+			bad("%s: power_w must be a number from 0 to %d (10 MW)", what, MaxPowerW)
 		}
 		if s.After.D() < 0 || s.Duration.D() <= 0 {
 			bad("%s: after must not be negative and duration must be positive", what)
@@ -314,9 +315,14 @@ func (m *Model) validateAnswer(action string, a Answer, versions []ocpp.Version,
 	}
 }
 
-// validPower reports whether w is a power the energy register can grow by: finite and
-// not negative (NaN and infinity would make the meter values unencodable as JSON).
-func validPower(w float64) bool { return w >= 0 && !math.IsInf(w, 1) }
+// MaxPowerW is the largest power_w and remote_power_w, in W: well above any charger (the
+// Megawatt Charging System goes to 3.75 MW). The energy register then stays far inside
+// the range of an int64 for any time a station can run.
+const MaxPowerW = 10_000_000
+
+// validPower reports whether w is a power the energy register can grow by: from 0 to
+// MaxPowerW (NaN and infinity would make the meter values unencodable as JSON).
+func validPower(w float64) bool { return w >= 0 && w <= MaxPowerW }
 
 func (m *Model) hasConnector(evse, connector int) bool {
 	for _, e := range m.EVSEs {

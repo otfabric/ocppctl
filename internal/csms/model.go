@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -17,6 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/otfabric/ocppctl/internal/ocppx"
+	"github.com/otfabric/ocppctl/internal/readlimit"
 )
 
 // Model describes how the CSMS answers its stations. Where OCPP leaves a decision to the
@@ -101,7 +100,10 @@ const defaultInterval = 300
 
 // Load reads and validates a model file for the versions served.
 func Load(path string, versions []ocpp.Version) (*Model, error) {
-	data, err := os.ReadFile(filepath.Clean(path))
+	data, err := readlimit.File(path, readlimit.Config)
+	if tl, ok := errors.AsType[*readlimit.TooLargeError](err); ok {
+		return nil, fmt.Errorf("%s: %w", path, tl)
+	}
 	if err != nil {
 		return nil, err
 	}

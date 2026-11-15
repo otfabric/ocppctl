@@ -52,6 +52,15 @@ type session struct {
 	answers map[ocpp.Version]*answer.Default
 }
 
+// dropped counts the CALLs and SENDs of the CSMS that were answered past the bound of
+// received.
+func (s *session) dropped() int {
+	if a := s.answers[s.v]; a != nil {
+		return a.Dropped()
+	}
+	return 0
+}
+
 func (s *session) received() []types.Received {
 	out := []types.Received{}
 	if a := s.answers[s.v]; a != nil {
@@ -190,6 +199,7 @@ func callOn(ctx context.Context, s *session, action string, req json.RawMessage,
 	return &types.CallResult{
 		Target: s.c.Parsed.URL, Version: s.v.String(), Action: action, Request: req, Response: resp,
 		DurationMS: time.Since(start).Milliseconds(), Validated: !raw, Received: s.received(),
+		ReceivedDropped: s.dropped(),
 	}, nil
 }
 

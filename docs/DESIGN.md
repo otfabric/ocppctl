@@ -121,7 +121,8 @@ ocppctl client probe --url wss://csms.example.com/ocpp/CS001
 | `--tls-server-name` | `OCPPCTL_TLS_SERVER_NAME` | URL host | Name to verify the CSMS certificate against |
 | `--insecure-transport` | `OCPPCTL_INSECURE_TRANSPORT` | off | Allow `ws://` (profile 0, 1) |
 | `--compression` | `OCPPCTL_COMPRESSION` | off | Offer permessage-deflate |
-| `--header NAME=VALUE` | — | — | Extra handshake header (repeatable) |
+| `--header NAME=VALUE` | — | — | Extra handshake header (repeatable); a value on the command line is visible to other local users |
+| `--header-file` | `OCPPCTL_HEADER_FILE` | — | Extra handshake headers from a file of `NAME=VALUE` lines, kept off the command line (v0.6.0) |
 | `--timeout` | `OCPPCTL_TIMEOUT` | `30s` | Response timeout of a CALL |
 | `--connect-timeout` | `OCPPCTL_CONNECT_TIMEOUT` | `10s` | Dial, TLS and WebSocket handshake |
 | `--debug` (global) | — | off | Every frame sent and received (go-ocpp's frame observer) and go-ocpp's log, to stderr |
