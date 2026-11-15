@@ -1,5 +1,21 @@
 # ocppctl Releases
 
+## v0.5.1
+
+**Date:** 2026-11-15
+**Previous release:** v0.5.0
+
+No command or flag is added or changed.
+
+### Changed
+
+- Built on go-ocpp v0.4.1 (was v0.4.0) (go-ocpp RELEASE.md, v0.4.1). For the tool this means:
+  - A message from the peer whose text is not valid UTF-8 ends the connection, and a JSON string with an unpaired surrogate escape is refused; before, such text was taken with replacement characters.
+  - With a ping interval, a peer is not taken for lost while the tool is still working through messages it received.
+  - A response time-out is also reported as a deadline that passed, and a call that was refused before it was sent is reported to the tool's call log.
+
+---
+
 ## v0.5.0
 
 **Date:** 2026-11-14
