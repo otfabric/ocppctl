@@ -1,5 +1,24 @@
 # ocppctl Releases
 
+## v0.6.1
+
+**Date:** 2026-11-16
+**Previous release:** v0.6.0
+
+### Summary
+
+Built on go-ocpp v0.5.0 (was v0.4.1). No command, flag or output changes.
+
+### Changed
+
+- Built on go-ocpp v0.5.0 (was v0.4.1) (go-ocpp RELEASE.md, v0.5.0). Its `### Breaking` entry (a `server.Secret` written by `encoding/json`, `encoding/xml` and `log/slog` comes out as `[redacted]`) does not reach the tool's output: ocppctl never writes a station's password, and its `refused` events carry only the identity, the remote address and the reason. The new `Client.Done` and `Client.Err` are not used by the tool.
+
+### Documentation
+
+- docs/KNOWN_ISSUES.md: ocppctl requires go-ocpp v0.5.0. README.md: the interoperability run of ocppctl v0.5.0 names go-ocpp v0.4.1 as the version it ran with, not as a requirement.
+
+---
+
 ## v0.6.0
 
 **Date:** 2026-11-15
